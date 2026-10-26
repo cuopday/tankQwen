@@ -1,5 +1,6 @@
 import { GameState, Tank, Bullet, Particle, Explosion, Obstacle, Vector2, ObstacleType } from './types';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, MAP_WIDTH, MAP_HEIGHT } from './engine';
+import { drawDetailedTank } from './EnhancedGraphics';
 
 let groundDecals: Array<{x: number; y: number; radius: number; opacity: number; type: 'scorch' | 'crater'}> = [];
 const MAX_DECALS = 80;
@@ -36,11 +37,11 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameState, time
     drawables.push({ y: obs.position.y + obs.height / 2, draw: () => drawObstacle2D5(ctx, obs, time) });
   });
   
-  // Tanks
+  // Tanks (using enhanced graphics)
   state.enemies.forEach(tank => {
-    drawables.push({ y: tank.position.y, draw: () => drawTank2D5(ctx, tank, time) });
+    drawables.push({ y: tank.position.y, draw: () => drawDetailedTank(ctx, tank, time) });
   });
-  drawables.push({ y: state.player.position.y, draw: () => drawTank2D5(ctx, state.player, time) });
+  drawables.push({ y: state.player.position.y, draw: () => drawDetailedTank(ctx, state.player, time) });
   
   // Bullets
   state.bullets.forEach(b => {
@@ -72,6 +73,7 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameState, time
   // Post-processing
   drawVignette(ctx);
   drawMistOverlay(ctx, time);
+  drawBloomEffect(ctx, state, time);
   drawCrosshair(ctx, state, time);
 }
 
@@ -86,11 +88,18 @@ function drawBackground(ctx: CanvasRenderingContext2D, time: number) {
 }
 
 function drawVietnamGround(ctx: CanvasRenderingContext2D, camera: Vector2, time: number, state: GameState) {
-  // Base muddy ground
-  ctx.fillStyle = '#2a3520';
+  // Base muddy ground with gradient
+  const groundGrad = ctx.createRadialGradient(
+    camera.x + CANVAS_WIDTH / 2, camera.y + CANVAS_HEIGHT / 2, 0,
+    camera.x + CANVAS_WIDTH / 2, camera.y + CANVAS_HEIGHT / 2, CANVAS_WIDTH
+  );
+  groundGrad.addColorStop(0, '#2d3a22');
+  groundGrad.addColorStop(0.5, '#2a3520');
+  groundGrad.addColorStop(1, '#253018');
+  ctx.fillStyle = groundGrad;
   ctx.fillRect(0, 0, MAP_WIDTH, MAP_HEIGHT);
   
-  // Dirt patches
+  // Enhanced dirt patches with better texture
   const tileSize = 100;
   const startX = Math.floor(camera.x / tileSize) * tileSize;
   const startY = Math.floor(camera.y / tileSize) * tileSize;
@@ -101,19 +110,41 @@ function drawVietnamGround(ctx: CanvasRenderingContext2D, camera: Vector2, time:
       const n = hash - Math.floor(hash);
       
       if (n > 0.6) {
-        // Dirt patch
-        ctx.fillStyle = `rgba(90, 70, 40, ${0.1 + n * 0.1})`;
+        // Dirt patch with gradient
+        const dirtGrad = ctx.createRadialGradient(
+          x + tileSize/2, y + tileSize/2, 0,
+          x + tileSize/2, y + tileSize/2, tileSize * 0.4
+        );
+        dirtGrad.addColorStop(0, `rgba(100, 75, 45, ${0.15 + n * 0.1})`);
+        dirtGrad.addColorStop(0.7, `rgba(85, 65, 38, ${0.1 + n * 0.08})`);
+        dirtGrad.addColorStop(1, 'rgba(70, 55, 30, 0)');
+        ctx.fillStyle = dirtGrad;
         ctx.beginPath();
         ctx.ellipse(x + tileSize/2, y + tileSize/2, tileSize * 0.4, tileSize * 0.3, n * Math.PI, 0, Math.PI * 2);
         ctx.fill();
       } else if (n > 0.3) {
-        // Grass tufts
-        ctx.fillStyle = `rgba(60, 90, 40, ${0.15})`;
-        for (let g = 0; g < 3; g++) {
-          const gx = x + (n * 100 + g * 30) % tileSize;
-          const gy = y + (n * 70 + g * 40) % tileSize;
+        // Enhanced grass tufts
+        for (let g = 0; g < 5; g++) {
+          const gx = x + (n * 100 + g * 20) % tileSize;
+          const gy = y + (n * 70 + g * 25) % tileSize;
+          const grassGrad = ctx.createRadialGradient(gx, gy, 0, gx, gy, 5);
+          grassGrad.addColorStop(0, `rgba(70, 110, 50, ${0.2})`);
+          grassGrad.addColorStop(1, 'rgba(60, 90, 40, 0)');
+          ctx.fillStyle = grassGrad;
           ctx.beginPath();
-          ctx.ellipse(gx, gy, 4, 2, g, 0, Math.PI * 2);
+          ctx.ellipse(gx, gy, 5, 3, g * 0.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      
+      // Small pebbles
+      if (n > 0.8) {
+        for (let p = 0; p < 2; p++) {
+          const px = x + (n * 50 + p * 40) % tileSize;
+          const py = y + (n * 80 + p * 30) % tileSize;
+          ctx.fillStyle = `rgba(120, 110, 90, ${0.15})`;
+          ctx.beginPath();
+          ctx.arc(px, py, 1.5 + (n * 2), 0, Math.PI * 2);
           ctx.fill();
         }
       }
@@ -2255,29 +2286,84 @@ function drawDynamicLighting(ctx: CanvasRenderingContext2D, state: GameState, ti
 
 // ===== POST PROCESSING =====
 function drawVignette(ctx: CanvasRenderingContext2D) {
-  const g = ctx.createRadialGradient(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_WIDTH * 0.3, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_WIDTH * 0.7);
-  g.addColorStop(0, 'rgba(0,0,0,0)');
-  g.addColorStop(1, 'rgba(0,0,0,0.5)');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  // Multi-layer vignette for cinematic depth
+  for (let i = 3; i >= 0; i--) {
+    const radius = CANVAS_WIDTH * (0.25 + i * 0.05);
+    const outerRadius = CANVAS_WIDTH * (0.65 + i * 0.05);
+    const g = ctx.createRadialGradient(
+      CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, radius,
+      CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, outerRadius
+    );
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, `rgba(0,0,0,${0.12 + i * 0.08})`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  }
 }
 
 function drawMistOverlay(ctx: CanvasRenderingContext2D, time: number) {
-  // Subtle jungle mist
+  // Animated mist layers for atmosphere
   ctx.save();
-  ctx.globalAlpha = 0.03;
-  const mistGrad = ctx.createLinearGradient(0, CANVAS_HEIGHT, 0, CANVAS_HEIGHT * 0.5);
-  mistGrad.addColorStop(0, 'rgba(150, 180, 150, 0.5)');
-  mistGrad.addColorStop(1, 'rgba(150, 180, 150, 0)');
-  ctx.fillStyle = mistGrad;
+  
+  // Bottom mist with gradient
+  const mistGrad1 = ctx.createLinearGradient(0, CANVAS_HEIGHT, 0, CANVAS_HEIGHT * 0.65);
+  mistGrad1.addColorStop(0, 'rgba(120, 150, 180, 0.05)');
+  mistGrad1.addColorStop(0.5, 'rgba(100, 130, 160, 0.025)');
+  mistGrad1.addColorStop(1, 'rgba(80, 110, 140, 0)');
+  ctx.fillStyle = mistGrad1;
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  
+  // Moving mist patches
+  ctx.globalAlpha = 0.025;
+  for (let i = 0; i < 4; i++) {
+    const mistX = (Math.sin(time * 0.0003 + i * 2.1) * 200) + CANVAS_WIDTH / 2;
+    const mistY = CANVAS_HEIGHT * 0.8 + Math.cos(time * 0.0002 + i * 1.3) * 50;
+    const mistGrad = ctx.createRadialGradient(mistX, mistY, 0, mistX, mistY, 150);
+    mistGrad.addColorStop(0, 'rgba(150, 180, 200, 0.3)');
+    mistGrad.addColorStop(1, 'rgba(150, 180, 200, 0)');
+    ctx.fillStyle = mistGrad;
+    ctx.beginPath();
+    ctx.ellipse(mistX, mistY, 200, 80, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
   ctx.restore();
   
-  // Green tint
+  // Jungle green tint with radial gradient
   ctx.save();
   ctx.globalAlpha = 0.02;
-  ctx.fillStyle = '#1a4a1a';
+  const tintGrad = ctx.createRadialGradient(
+    CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 0,
+    CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_WIDTH * 0.7
+  );
+  tintGrad.addColorStop(0, 'rgba(30, 80, 30, 0.3)');
+  tintGrad.addColorStop(1, 'rgba(20, 60, 20, 0)');
+  ctx.fillStyle = tintGrad;
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  ctx.restore();
+}
+
+function drawBloomEffect(ctx: CanvasRenderingContext2D, state: GameState, time: number) {
+  // Subtle bloom on bright areas (explosions, projectiles)
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = 0.04;
+  
+  // Bloom around explosions
+  state.explosions.forEach(exp => {
+    const bloomGrad = ctx.createRadialGradient(
+      exp.position.x, exp.position.y, 0,
+      exp.position.x, exp.position.y, exp.radius * 1.5
+    );
+    bloomGrad.addColorStop(0, 'rgba(255, 200, 100, 0.3)');
+    bloomGrad.addColorStop(0.5, 'rgba(255, 150, 50, 0.1)');
+    bloomGrad.addColorStop(1, 'rgba(255, 100, 0, 0)');
+    ctx.fillStyle = bloomGrad;
+    ctx.beginPath();
+    ctx.arc(exp.position.x, exp.position.y, exp.radius * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  
   ctx.restore();
 }
 
