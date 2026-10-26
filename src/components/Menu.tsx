@@ -181,7 +181,7 @@ export default function Menu({ onStart }: MenuProps) {
       <div className={`relative z-10 text-center transition-all duration-1000 ease-out ${showContent ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-95'}`}>
         <div className="mb-6">
           <div className="text-xs uppercase tracking-[0.4em] text-orange-400/50 mb-3 font-medium">
-            💥 CHAOS MODE • 200+ OBJECTS 💥
+            💥 50 TANKS • 100 WEAPONS 💥
           </div>
           
           <h1 className="text-7xl font-black tracking-tighter mb-1 leading-none">
@@ -204,7 +204,7 @@ export default function Menu({ onStart }: MenuProps) {
           </div>
           
           <p className="mt-3 text-sm text-gray-400/70 font-light tracking-[0.15em]">
-            EXPLOSIVE CHAOS • POWER-UPS • MAYHEM
+            UNIQUE TANKS • DISTINCT WEAPONS • TOTAL MAYHEM
           </p>
         </div>
 
