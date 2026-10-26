@@ -181,97 +181,294 @@ export function createParticles(position: Vector2, count: number, type: Particle
 
 export function createObstacles(): Obstacle[] {
   const obstacles: Obstacle[] = [];
+  const margin = 300;
   
-  // Buildings - spread across the big map
-  for (let i = 0; i < 20; i++) {
+  // Helper to check if position is too close to center (player spawn)
+  const isNearCenter = (x: number, y: number) => {
+    const cx = MAP_WIDTH / 2, cy = MAP_HEIGHT / 2;
+    return Math.sqrt((x - cx) ** 2 + (y - cy) ** 2) < 200;
+  };
+  
+  const randPos = () => {
+    let x, y, attempts = 0;
+    do {
+      x = margin + Math.random() * (MAP_WIDTH - margin * 2);
+      y = margin + Math.random() * (MAP_HEIGHT - margin * 2);
+      attempts++;
+    } while (isNearCenter(x, y) && attempts < 20);
+    return { x, y };
+  };
+  
+  // === STILT HOUSES (traditional Vietnamese) ===
+  for (let i = 0; i < 12; i++) {
+    const pos = randPos();
     obstacles.push({
-      position: {
-        x: 300 + Math.random() * (MAP_WIDTH - 600),
-        y: 300 + Math.random() * (MAP_HEIGHT - 600),
-      },
-      width: 70 + Math.random() * 100,
-      height: 70 + Math.random() * 100,
-      depth: 40 + Math.random() * 30, // 2.5D depth
-      type: 'building',
-      health: 250,
-      maxHealth: 250,
-      color: '#4a5568',
-      angle: 0,
+      position: pos,
+      width: 80 + Math.random() * 50,
+      height: 60 + Math.random() * 30,
+      depth: 55 + Math.random() * 20,
+      type: 'stilt_house',
+      health: 200,
+      maxHealth: 200,
+      color: '#8B6914',
+      angle: (Math.floor(Math.random() * 4)) * Math.PI / 2, // cardinal directions
+      variant: Math.floor(Math.random() * 3),
     });
   }
   
-  // Rocks
-  for (let i = 0; i < 25; i++) {
-    const size = 25 + Math.random() * 40;
+  // === MUD HUTS ===
+  for (let i = 0; i < 10; i++) {
+    const pos = randPos();
     obstacles.push({
-      position: {
-        x: 200 + Math.random() * (MAP_WIDTH - 400),
-        y: 200 + Math.random() * (MAP_HEIGHT - 400),
-      },
-      width: size,
-      height: size * (0.8 + Math.random() * 0.4),
-      depth: size * 0.6,
-      type: 'rock',
-      health: 100,
-      maxHealth: 100,
-      color: '#6b7280',
+      position: pos,
+      width: 50 + Math.random() * 30,
+      height: 45 + Math.random() * 25,
+      depth: 35 + Math.random() * 15,
+      type: 'mud_hut',
+      health: 120,
+      maxHealth: 120,
+      color: '#8B7355',
       angle: Math.random() * Math.PI * 2,
+      variant: Math.floor(Math.random() * 3),
     });
   }
   
-  // Crates
-  for (let i = 0; i < 30; i++) {
-    const size = 28 + Math.random() * 25;
+  // === BAMBOO CLUSTERS ===
+  for (let i = 0; i < 20; i++) {
+    const pos = randPos();
     obstacles.push({
-      position: {
-        x: 150 + Math.random() * (MAP_WIDTH - 300),
-        y: 150 + Math.random() * (MAP_HEIGHT - 300),
-      },
-      width: size,
-      height: size,
-      depth: size * 0.8,
-      type: 'crate',
-      health: 60,
-      maxHealth: 60,
-      color: '#8B4513',
-      angle: 0,
+      position: pos,
+      width: 30 + Math.random() * 25,
+      height: 30 + Math.random() * 25,
+      depth: 70 + Math.random() * 40,
+      type: 'bamboo',
+      health: 50,
+      maxHealth: 50,
+      color: '#4a7c3a',
+      angle: Math.random() * Math.PI * 2,
+      variant: Math.floor(Math.random() * 4),
     });
   }
   
-  // Walls
+  // === RICE PADDIES (non-collidable water areas) ===
+  for (let i = 0; i < 15; i++) {
+    const pos = randPos();
+    obstacles.push({
+      position: pos,
+      width: 100 + Math.random() * 80,
+      height: 70 + Math.random() * 60,
+      depth: 3,
+      type: 'rice_paddy',
+      health: 9999,
+      maxHealth: 9999,
+      color: '#5a8a4a',
+      angle: Math.random() * Math.PI * 2,
+      variant: Math.floor(Math.random() * 3),
+    });
+  }
+  
+  // === BUDDHA STATUES ===
+  for (let i = 0; i < 6; i++) {
+    const pos = randPos();
+    obstacles.push({
+      position: pos,
+      width: 25 + Math.random() * 15,
+      height: 25 + Math.random() * 15,
+      depth: 45 + Math.random() * 25,
+      type: 'buddha',
+      health: 300,
+      maxHealth: 300,
+      color: '#9ca3af',
+      angle: Math.random() * Math.PI * 2,
+      variant: Math.floor(Math.random() * 3),
+    });
+  }
+  
+  // === WELLS ===
+  for (let i = 0; i < 8; i++) {
+    const pos = randPos();
+    obstacles.push({
+      position: pos,
+      width: 28 + Math.random() * 12,
+      height: 28 + Math.random() * 12,
+      depth: 20,
+      type: 'well',
+      health: 180,
+      maxHealth: 180,
+      color: '#6b7280',
+      angle: 0,
+      variant: Math.floor(Math.random() * 2),
+    });
+  }
+  
+  // === RICE STACKS ===
   for (let i = 0; i < 18; i++) {
-    const isHorizontal = Math.random() > 0.5;
+    const pos = randPos();
     obstacles.push({
-      position: {
-        x: 300 + Math.random() * (MAP_WIDTH - 600),
-        y: 300 + Math.random() * (MAP_HEIGHT - 600),
-      },
-      width: isHorizontal ? 120 + Math.random() * 180 : 25,
-      height: isHorizontal ? 25 : 120 + Math.random() * 180,
+      position: pos,
+      width: 25 + Math.random() * 20,
+      height: 20 + Math.random() * 15,
       depth: 30 + Math.random() * 20,
-      type: 'wall',
-      health: 350,
-      maxHealth: 350,
-      color: '#374151',
-      angle: 0,
+      type: 'rice_stack',
+      health: 30,
+      maxHealth: 30,
+      color: '#c4a44a',
+      angle: Math.random() * Math.PI * 2,
+      variant: Math.floor(Math.random() * 3),
     });
   }
   
-  // Trees (decorative but collidable)
-  for (let i = 0; i < 35; i++) {
+  // === WOODEN FENCES ===
+  for (let i = 0; i < 15; i++) {
+    const pos = randPos();
+    const horizontal = Math.random() > 0.5;
     obstacles.push({
-      position: {
-        x: 200 + Math.random() * (MAP_WIDTH - 400),
-        y: 200 + Math.random() * (MAP_HEIGHT - 400),
-      },
-      width: 20 + Math.random() * 15,
-      height: 20 + Math.random() * 15,
-      depth: 50 + Math.random() * 30,
-      type: 'tree',
+      position: pos,
+      width: horizontal ? 100 + Math.random() * 120 : 12,
+      height: horizontal ? 12 : 100 + Math.random() * 120,
+      depth: 25,
+      type: 'fence',
       health: 40,
       maxHealth: 40,
-      color: '#166534',
+      color: '#6b4423',
       angle: 0,
+      variant: Math.floor(Math.random() * 2),
+    });
+  }
+  
+  // === PALM TREES ===
+  for (let i = 0; i < 20; i++) {
+    const pos = randPos();
+    obstacles.push({
+      position: pos,
+      width: 18 + Math.random() * 12,
+      height: 18 + Math.random() * 12,
+      depth: 80 + Math.random() * 40,
+      type: 'palm_tree',
+      health: 60,
+      maxHealth: 60,
+      color: '#2d5016',
+      angle: Math.random() * Math.PI * 2,
+      variant: Math.floor(Math.random() * 3),
+    });
+  }
+  
+  // === BANANA TREES ===
+  for (let i = 0; i < 15; i++) {
+    const pos = randPos();
+    obstacles.push({
+      position: pos,
+      width: 22 + Math.random() * 15,
+      height: 22 + Math.random() * 15,
+      depth: 55 + Math.random() * 25,
+      type: 'banana_tree',
+      health: 35,
+      maxHealth: 35,
+      color: '#3d7a1c',
+      angle: Math.random() * Math.PI * 2,
+      variant: Math.floor(Math.random() * 3),
+    });
+  }
+  
+  // === SAMPANS (boats) ===
+  for (let i = 0; i < 8; i++) {
+    const pos = randPos();
+    obstacles.push({
+      position: pos,
+      width: 50 + Math.random() * 30,
+      height: 18 + Math.random() * 8,
+      depth: 12,
+      type: 'sampan',
+      health: 50,
+      maxHealth: 50,
+      color: '#5c3317',
+      angle: Math.random() * Math.PI * 2,
+      variant: Math.floor(Math.random() * 3),
+    });
+  }
+  
+  // === MARKET STALLS ===
+  for (let i = 0; i < 10; i++) {
+    const pos = randPos();
+    obstacles.push({
+      position: pos,
+      width: 45 + Math.random() * 25,
+      height: 35 + Math.random() * 20,
+      depth: 40 + Math.random() * 15,
+      type: 'market_stall',
+      health: 70,
+      maxHealth: 70,
+      color: '#8B4513',
+      angle: (Math.floor(Math.random() * 4)) * Math.PI / 2,
+      variant: Math.floor(Math.random() * 4),
+    });
+  }
+  
+  // === STONE LANTERNS ===
+  for (let i = 0; i < 12; i++) {
+    const pos = randPos();
+    obstacles.push({
+      position: pos,
+      width: 15 + Math.random() * 8,
+      height: 15 + Math.random() * 8,
+      depth: 35 + Math.random() * 15,
+      type: 'stone_lantern',
+      health: 150,
+      maxHealth: 150,
+      color: '#78716c',
+      angle: 0,
+      variant: Math.floor(Math.random() * 2),
+    });
+  }
+  
+  // === VILLAGE GATES (torii-style) ===
+  for (let i = 0; i < 5; i++) {
+    const pos = randPos();
+    obstacles.push({
+      position: pos,
+      width: 60 + Math.random() * 30,
+      height: 15,
+      depth: 65 + Math.random() * 20,
+      type: 'village_gate',
+      health: 250,
+      maxHealth: 250,
+      color: '#991b1b',
+      angle: (Math.floor(Math.random() * 2)) * Math.PI / 2,
+      variant: 0,
+    });
+  }
+  
+  // === BARRELS ===
+  for (let i = 0; i < 20; i++) {
+    const pos = randPos();
+    obstacles.push({
+      position: pos,
+      width: 18 + Math.random() * 10,
+      height: 18 + Math.random() * 10,
+      depth: 22 + Math.random() * 8,
+      type: 'barrel',
+      health: 45,
+      maxHealth: 45,
+      color: '#5c3317',
+      angle: Math.random() * Math.PI * 2,
+      variant: Math.floor(Math.random() * 3),
+    });
+  }
+  
+  // === CARTS ===
+  for (let i = 0; i < 8; i++) {
+    const pos = randPos();
+    obstacles.push({
+      position: pos,
+      width: 45 + Math.random() * 20,
+      height: 28 + Math.random() * 12,
+      depth: 25,
+      type: 'cart',
+      health: 80,
+      maxHealth: 80,
+      color: '#6b4423',
+      angle: Math.random() * Math.PI * 2,
+      variant: Math.floor(Math.random() * 2),
     });
   }
   
@@ -418,8 +615,9 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
     };
   }
   
-  // Obstacle collision for player
+  // Obstacle collision for player (skip non-solid obstacles)
   for (const obs of newState.obstacles) {
+    if (obs.type === 'rice_paddy') continue; // Can drive through water
     if (rectCollision(player.position, player.size, obs)) {
       const pushDir = normalize({
         x: player.position.x - obs.position.x,
@@ -558,9 +756,10 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
       return false;
     }
     
-    // Bullet-obstacle collision
+    // Bullet-obstacle collision (skip rice paddies - they're water)
     for (let i = 0; i < newState.obstacles.length; i++) {
       const obs = newState.obstacles[i];
+      if (obs.type === 'rice_paddy') continue; // Bullets pass over water
       if (b.position.x > obs.position.x - obs.width / 2 &&
           b.position.x < obs.position.x + obs.width / 2 &&
           b.position.y > obs.position.y - obs.height / 2 &&

@@ -45,11 +45,22 @@ export default function HUD({ state }: HUDProps) {
             {/* Obstacles */}
             {state.obstacles.map((obs, i) => {
               const colors: Record<string, string> = {
-                building: 'bg-gray-500/50',
-                crate: 'bg-amber-700/50',
-                wall: 'bg-gray-600/50',
-                rock: 'bg-gray-400/40',
-                tree: 'bg-green-700/50',
+                stilt_house: 'bg-amber-800/60',
+                mud_hut: 'bg-amber-700/50',
+                bamboo: 'bg-green-600/50',
+                rice_paddy: 'bg-green-500/30',
+                buddha: 'bg-gray-400/60',
+                well: 'bg-gray-500/50',
+                rice_stack: 'bg-yellow-600/50',
+                fence: 'bg-amber-900/50',
+                palm_tree: 'bg-green-700/50',
+                banana_tree: 'bg-green-600/50',
+                sampan: 'bg-amber-900/50',
+                market_stall: 'bg-red-800/50',
+                stone_lantern: 'bg-gray-400/50',
+                village_gate: 'bg-red-700/60',
+                barrel: 'bg-amber-800/50',
+                cart: 'bg-amber-700/50',
               };
               return (
                 <div

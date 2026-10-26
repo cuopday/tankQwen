@@ -72,16 +72,16 @@ export default function Menu({ onStart }: MenuProps) {
       time++;
       ctx.clearRect(0, 0, 1200, 800);
 
-      // Background
+      // Background - jungle night
       const bg = ctx.createRadialGradient(600, 400, 0, 600, 400, 700);
-      bg.addColorStop(0, '#1a1a2e');
-      bg.addColorStop(0.5, '#0f172a');
-      bg.addColorStop(1, '#030712');
+      bg.addColorStop(0, '#1a2817');
+      bg.addColorStop(0.5, '#0f1f0a');
+      bg.addColorStop(1, '#030a02');
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, 1200, 800);
 
-      // Isometric ground grid
-      ctx.strokeStyle = 'rgba(59, 130, 246, 0.06)';
+      // Isometric ground grid - jungle earth tones
+      ctx.strokeStyle = 'rgba(34, 197, 94, 0.05)';
       ctx.lineWidth = 0.5;
       const gridSize = 60;
       const gridOffset = (time * 0.2) % gridSize;
@@ -180,8 +180,8 @@ export default function Menu({ onStart }: MenuProps) {
 
       <div className={`relative z-10 text-center transition-all duration-1000 ease-out ${showContent ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-95'}`}>
         <div className="mb-6">
-          <div className="text-xs uppercase tracking-[0.4em] text-blue-400/50 mb-3 font-medium">
-            ⚡ 2.5D Tactical Warfare ⚡
+          <div className="text-xs uppercase tracking-[0.4em] text-green-400/50 mb-3 font-medium">
+            🌿 Vietnam Village • 1968 🌿
           </div>
           
           <h1 className="text-7xl font-black tracking-tighter mb-1 leading-none">
@@ -204,7 +204,7 @@ export default function Menu({ onStart }: MenuProps) {
           </div>
           
           <p className="mt-3 text-sm text-gray-400/70 font-light tracking-[0.15em]">
-            MASSIVE BATTLEFIELD • EXPANSIVE WORLD
+            VIETNAM VILLAGE • JUNGLE WARFARE
           </p>
         </div>
 
@@ -292,7 +292,7 @@ export default function Menu({ onStart }: MenuProps) {
 
         <div className={`mt-6 transition-all duration-700 delay-700 ${showButton ? 'opacity-100' : 'opacity-0'}`}>
           <p className="text-[11px] text-gray-600 tracking-wide">
-            Explore a massive battlefield • 2.5D isometric visuals • Survive endless waves
+            Fight through stilt houses & rice paddies • Bamboo groves & Buddha statues • Survive the jungle
           </p>
         </div>
       </div>

@@ -20,7 +20,7 @@ export interface Tank {
   fireRate: number;
   isPlayer: boolean;
   size: number;
-  height: number; // 2.5D height
+  height: number;
   trackOffset: number;
   shield: number;
   kills: number;
@@ -37,7 +37,7 @@ export interface Bullet {
   lifetime: number;
   trail: Vector2[];
   size: number;
-  height: number; // bullet height for 2.5D arc
+  height: number;
 }
 
 export interface Particle {
@@ -47,11 +47,11 @@ export interface Particle {
   maxLifetime: number;
   size: number;
   color: string;
-  type: 'explosion' | 'smoke' | 'spark' | 'debris' | 'trail' | 'muzzle' | 'dust';
+  type: 'explosion' | 'smoke' | 'spark' | 'debris' | 'trail' | 'muzzle' | 'dust' | 'firefly' | 'mist';
   rotation: number;
   rotationSpeed: number;
   opacity: number;
-  height: number; // for 2.5D
+  height: number;
 }
 
 export interface Explosion {
@@ -63,16 +63,24 @@ export interface Explosion {
   color: string;
 }
 
+export type ObstacleType = 
+  | 'stilt_house' | 'mud_hut' | 'bamboo' | 'rice_paddy' 
+  | 'buddha' | 'well' | 'rice_stack' | 'fence' 
+  | 'palm_tree' | 'banana_tree' | 'sampan' | 'market_stall'
+  | 'stone_lantern' | 'village_gate' | 'wooden_bridge' | 'barrel'
+  | 'cart' | 'water_buffalo';
+
 export interface Obstacle {
   position: Vector2;
   width: number;
   height: number;
-  depth: number; // 2.5D visual depth/height
-  type: 'wall' | 'crate' | 'building' | 'rock' | 'tree';
+  depth: number;
+  type: ObstacleType;
   health: number;
   maxHealth: number;
   color: string;
   angle: number;
+  variant: number; // for visual variety
 }
 
 export interface GameState {
