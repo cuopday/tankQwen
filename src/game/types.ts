@@ -8,6 +8,7 @@ export interface Tank {
   position: Vector2;
   velocity: Vector2;
   angle: number;
+  targetAngle: number;
   turretAngle: number;
   health: number;
   maxHealth: number;
@@ -19,9 +20,11 @@ export interface Tank {
   fireRate: number;
   isPlayer: boolean;
   size: number;
+  height: number; // 2.5D height
   trackOffset: number;
   shield: number;
   kills: number;
+  moving: boolean;
 }
 
 export interface Bullet {
@@ -34,6 +37,7 @@ export interface Bullet {
   lifetime: number;
   trail: Vector2[];
   size: number;
+  height: number; // bullet height for 2.5D arc
 }
 
 export interface Particle {
@@ -43,10 +47,11 @@ export interface Particle {
   maxLifetime: number;
   size: number;
   color: string;
-  type: 'explosion' | 'smoke' | 'spark' | 'debris' | 'trail' | 'muzzle';
+  type: 'explosion' | 'smoke' | 'spark' | 'debris' | 'trail' | 'muzzle' | 'dust';
   rotation: number;
   rotationSpeed: number;
   opacity: number;
+  height: number; // for 2.5D
 }
 
 export interface Explosion {
@@ -62,7 +67,8 @@ export interface Obstacle {
   position: Vector2;
   width: number;
   height: number;
-  type: 'wall' | 'crate' | 'building';
+  depth: number; // 2.5D visual depth/height
+  type: 'wall' | 'crate' | 'building' | 'rock' | 'tree';
   health: number;
   maxHealth: number;
   color: string;
@@ -83,7 +89,7 @@ export interface GameState {
   paused: boolean;
   screenShake: Vector2;
   time: number;
-  waveAnnouncement: number; // timer for wave announcement display
+  waveAnnouncement: number;
 }
 
 export interface InputState {
