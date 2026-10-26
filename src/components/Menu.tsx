@@ -180,8 +180,8 @@ export default function Menu({ onStart }: MenuProps) {
 
       <div className={`relative z-10 text-center transition-all duration-1000 ease-out ${showContent ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-95'}`}>
         <div className="mb-6">
-          <div className="text-xs uppercase tracking-[0.4em] text-green-400/50 mb-3 font-medium">
-            🌿 Vietnam Village • 1968 🌿
+          <div className="text-xs uppercase tracking-[0.4em] text-orange-400/50 mb-3 font-medium">
+            💥 CHAOS MODE • 200+ OBJECTS 💥
           </div>
           
           <h1 className="text-7xl font-black tracking-tighter mb-1 leading-none">
@@ -198,13 +198,13 @@ export default function Menu({ onStart }: MenuProps) {
           </h1>
           
           <div className="flex items-center justify-center gap-4 mt-4">
-            <div className="h-px w-16 bg-gradient-to-r from-transparent to-blue-400/40" />
-            <div className="w-2 h-2 rotate-45 bg-blue-400/40" />
-            <div className="h-px w-16 bg-gradient-to-l from-transparent to-blue-400/40" />
+            <div className="h-px w-16 bg-gradient-to-r from-transparent to-orange-400/40" />
+            <div className="w-2 h-2 rotate-45 bg-orange-400/40" />
+            <div className="h-px w-16 bg-gradient-to-l from-transparent to-orange-400/40" />
           </div>
           
           <p className="mt-3 text-sm text-gray-400/70 font-light tracking-[0.15em]">
-            VIETNAM VILLAGE • JUNGLE WARFARE
+            EXPLOSIVE CHAOS • POWER-UPS • MAYHEM
           </p>
         </div>
 
@@ -292,7 +292,7 @@ export default function Menu({ onStart }: MenuProps) {
 
         <div className={`mt-6 transition-all duration-700 delay-700 ${showButton ? 'opacity-100' : 'opacity-0'}`}>
           <p className="text-[11px] text-gray-600 tracking-wide">
-            Fight through stilt houses & rice paddies • Bamboo groves & Buddha statues • Survive the jungle
+            Chain explosions • Power-ups • Tornadoes • Black holes • Turrets • Portals • Total chaos!
           </p>
         </div>
       </div>

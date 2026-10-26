@@ -13,7 +13,7 @@ export default function HUD({ state }: HUDProps) {
 
   return (
     <div className="absolute inset-0 pointer-events-none">
-      {/* Top-left: Score & Wave */}
+      {/* Top-left: Score, Wave, Chaos Level */}
       <div className="absolute top-3 left-3 flex flex-col gap-2">
         <div className="bg-black/70 backdrop-blur-xl rounded-xl px-4 py-2 border border-blue-500/20 shadow-lg">
           <div className="text-[10px] text-blue-300/70 uppercase tracking-[0.2em] font-semibold">Score</div>
@@ -23,10 +23,49 @@ export default function HUD({ state }: HUDProps) {
           <div className="text-[10px] text-purple-300/70 uppercase tracking-[0.2em] font-semibold">Wave</div>
           <div className="text-xl font-bold text-white">{state.wave}</div>
         </div>
+        <div className="bg-black/70 backdrop-blur-xl rounded-xl px-4 py-2 border border-orange-500/20 shadow-lg">
+          <div className="text-[10px] text-orange-300/70 uppercase tracking-[0.2em] font-semibold">Chaos</div>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className={`w-3 h-3 rounded-full ${
+                  i < state.chaosLevel
+                    ? 'bg-gradient-to-br from-orange-400 to-red-600 shadow-lg shadow-orange-500/50'
+                    : 'bg-gray-700'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
         <div className="bg-black/70 backdrop-blur-xl rounded-xl px-4 py-2 border border-red-500/20 shadow-lg">
           <div className="text-[10px] text-red-300/70 uppercase tracking-[0.2em] font-semibold">Kills</div>
           <div className="text-xl font-black text-white tabular-nums">{state.player.kills}</div>
         </div>
+      </div>
+      
+      {/* Power-up indicators */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 flex gap-2">
+        {state.player.rapidFire && state.player.rapidFire > 0 && (
+          <div className="bg-orange-500/80 backdrop-blur-xl rounded-lg px-3 py-1 border border-orange-300/50 shadow-lg">
+            <span className="text-xs font-bold text-white">🔥 RAPID FIRE</span>
+          </div>
+        )}
+        {state.player.tripleShot && state.player.tripleShot > 0 && (
+          <div className="bg-purple-500/80 backdrop-blur-xl rounded-lg px-3 py-1 border border-purple-300/50 shadow-lg">
+            <span className="text-xs font-bold text-white">3x TRIPLE</span>
+          </div>
+        )}
+        {state.player.speedBoost && state.player.speedBoost > 0 && (
+          <div className="bg-blue-500/80 backdrop-blur-xl rounded-lg px-3 py-1 border border-blue-300/50 shadow-lg">
+            <span className="text-xs font-bold text-white">⚡ SPEED</span>
+          </div>
+        )}
+        {state.player.shield > 0 && (
+          <div className="bg-cyan-500/80 backdrop-blur-xl rounded-lg px-3 py-1 border border-cyan-300/50 shadow-lg">
+            <span className="text-xs font-bold text-white">🛡 SHIELD</span>
+          </div>
+        )}
       </div>
 
       {/* Top-right: BIG MINIMAP */}
@@ -45,6 +84,7 @@ export default function HUD({ state }: HUDProps) {
             {/* Obstacles */}
             {state.obstacles.map((obs, i) => {
               const colors: Record<string, string> = {
+                // Vietnam village
                 stilt_house: 'bg-amber-800/60',
                 mud_hut: 'bg-amber-700/50',
                 bamboo: 'bg-green-600/50',
@@ -61,6 +101,33 @@ export default function HUD({ state }: HUDProps) {
                 village_gate: 'bg-red-700/60',
                 barrel: 'bg-amber-800/50',
                 cart: 'bg-amber-700/50',
+                // Explosives
+                explosive_barrel: 'bg-red-600/80',
+                tnt_crate: 'bg-red-800/80',
+                // Power-ups
+                health_pack: 'bg-green-400/80',
+                speed_boost: 'bg-blue-400/80',
+                rapid_fire: 'bg-orange-400/80',
+                triple_shot: 'bg-purple-400/80',
+                shield: 'bg-cyan-400/80',
+                armor_boost: 'bg-gray-400/80',
+                // Hazards
+                lava_pool: 'bg-orange-600/70',
+                acid_lake: 'bg-green-400/70',
+                quicksand: 'bg-yellow-800/70',
+                ice_patch: 'bg-blue-200/70',
+                oil_spill: 'bg-gray-800/70',
+                tornado: 'bg-gray-500/70',
+                // Traps
+                auto_turret: 'bg-red-900/80',
+                // Interactive
+                teleport_portal: 'bg-purple-500/80',
+                // Moving
+                rolling_boulder: 'bg-gray-600/80',
+                // AI
+                attack_drone: 'bg-red-500/80',
+                // Chaos
+                black_hole: 'bg-purple-900/90',
               };
               return (
                 <div

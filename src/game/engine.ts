@@ -1,10 +1,9 @@
-import { Tank, Bullet, Particle, Explosion, Obstacle, GameState, InputState, Vector2 } from './types';
+import { Tank, Bullet, Particle, Explosion, Obstacle, GameState, InputState, Vector2, ObstacleType } from './types';
 import { addGroundDecal, clearDecals } from './renderer';
 
 let nextId = 0;
 const getId = () => `id_${nextId++}`;
 
-// MUCH BIGGER MAP
 export const CANVAS_WIDTH = 1200;
 export const CANVAS_HEIGHT = 800;
 export const MAP_WIDTH = 4800;
@@ -21,14 +20,14 @@ export function createPlayer(): Tank {
     health: 100,
     maxHealth: 100,
     speed: 4.5,
-    rotationSpeed: 0.08, // Faster rotation for responsive controls
+    rotationSpeed: 0.08,
     color: '#2563eb',
     accentColor: '#60a5fa',
     lastShot: 0,
     fireRate: 250,
     isPlayer: true,
     size: 26,
-    height: 14, // 2.5D height
+    height: 14,
     trackOffset: 0,
     shield: 0,
     kills: 0,
@@ -43,22 +42,17 @@ export function createEnemy(wave: number, playerPos: Vector2): Tank {
     { color: '#ea580c', accentColor: '#fb923c' },
     { color: '#059669', accentColor: '#34d399' },
     { color: '#d946ef', accentColor: '#f0abfc' },
-    { color: '#0891b2', accentColor: '#22d3ee' },
   ];
   const colorSet = colors[Math.floor(Math.random() * colors.length)];
   const margin = 200;
   
-  // Spawn far from player
   let x: number, y: number;
   let attempts = 0;
   do {
     x = margin + Math.random() * (MAP_WIDTH - margin * 2);
     y = margin + Math.random() * (MAP_HEIGHT - margin * 2);
     attempts++;
-  } while (
-    Math.sqrt((x - playerPos.x) ** 2 + (y - playerPos.y) ** 2) < 600 && 
-    attempts < 50
-  );
+  } while (Math.sqrt((x - playerPos.x) ** 2 + (y - playerPos.y) ** 2) < 600 && attempts < 50);
 
   return {
     id: getId(),
@@ -84,7 +78,7 @@ export function createEnemy(wave: number, playerPos: Vector2): Tank {
   };
 }
 
-export function createBullet(tank: Tank): Bullet {
+export function createBullet(tank: Tank, homing = false, explosive = false): Bullet {
   const speed = 12;
   const angle = tank.turretAngle;
   const barrelLength = tank.size * 1.5;
@@ -105,18 +99,20 @@ export function createBullet(tank: Tank): Bullet {
     lifetime: 2500,
     trail: [],
     size: tank.isPlayer ? 5 : 4,
-    height: 8, // 2.5D bullet height
+    height: 8,
+    homing,
+    explosive,
   };
 }
 
-export function createExplosion(position: Vector2, size: number): Explosion {
+export function createExplosion(position: Vector2, size: number, color = '#ff6b35'): Explosion {
   return {
     position: { ...position },
     radius: 0,
     maxRadius: size,
     lifetime: 600,
     maxLifetime: 600,
-    color: '#ff6b35',
+    color,
   };
 }
 
@@ -129,6 +125,9 @@ export function createParticles(position: Vector2, count: number, type: Particle
                   type === 'smoke' ? 0.5 + Math.random() * 2 :
                   type === 'muzzle' ? 3 + Math.random() * 5 :
                   type === 'dust' ? 1 + Math.random() * 2 :
+                  type === 'fire' ? 2 + Math.random() * 4 :
+                  type === 'lightning' ? 8 + Math.random() * 12 :
+                  type === 'confetti' ? 3 + Math.random() * 5 :
                   1 + Math.random() * 3;
     
     const colors: Record<string, string[]> = {
@@ -139,6 +138,9 @@ export function createParticles(position: Vector2, count: number, type: Particle
       trail: ['#ff9500', '#ffcc00', '#ff6b35'],
       muzzle: ['#ffffff', '#ffee00', '#ffcc00', '#ff9500'],
       dust: ['#a0845c', '#8b7355', '#6b5b45', '#9c8b70'],
+      fire: ['#ff4500', '#ff6347', '#ff7f50', '#ffa500'],
+      lightning: ['#00ffff', '#00ccff', '#ffffff', '#88ffff'],
+      confetti: ['#ff00ff', '#00ffff', '#ffff00', '#ff0000', '#00ff00', '#0000ff'],
     };
     
     const particleColors = colors[type] || colors.explosion;
@@ -155,324 +157,37 @@ export function createParticles(position: Vector2, count: number, type: Particle
                 type === 'spark' ? 200 + Math.random() * 400 :
                 type === 'muzzle' ? 100 + Math.random() * 200 :
                 type === 'dust' ? 400 + Math.random() * 600 :
+                type === 'fire' ? 300 + Math.random() * 500 :
+                type === 'lightning' ? 100 + Math.random() * 200 :
+                type === 'confetti' ? 1000 + Math.random() * 1000 :
                 400 + Math.random() * 600,
       maxLifetime: type === 'smoke' ? 2000 :
                    type === 'explosion' ? 800 :
                    type === 'spark' ? 600 :
                    type === 'muzzle' ? 300 :
                    type === 'dust' ? 1000 :
+                   type === 'fire' ? 800 :
+                   type === 'lightning' ? 300 :
+                   type === 'confetti' ? 2000 :
                    1000,
       size: type === 'smoke' ? 8 + Math.random() * 15 :
             type === 'explosion' ? 4 + Math.random() * 8 :
             type === 'spark' ? 2 + Math.random() * 3 :
             type === 'muzzle' ? 3 + Math.random() * 5 :
             type === 'dust' ? 5 + Math.random() * 8 :
+            type === 'fire' ? 3 + Math.random() * 5 :
+            type === 'lightning' ? 1 + Math.random() * 2 :
+            type === 'confetti' ? 2 + Math.random() * 3 :
             3 + Math.random() * 5,
       color: particleColor,
       type,
       rotation: Math.random() * Math.PI * 2,
-      rotationSpeed: (Math.random() - 0.5) * 0.2,
+      rotationSpeed: (Math.random() - 0.5) * 0.3,
       opacity: 1,
       height: type === 'dust' ? Math.random() * 3 : 0,
     });
   }
   return particles;
-}
-
-export function createObstacles(): Obstacle[] {
-  const obstacles: Obstacle[] = [];
-  const margin = 300;
-  
-  // Helper to check if position is too close to center (player spawn)
-  const isNearCenter = (x: number, y: number) => {
-    const cx = MAP_WIDTH / 2, cy = MAP_HEIGHT / 2;
-    return Math.sqrt((x - cx) ** 2 + (y - cy) ** 2) < 200;
-  };
-  
-  const randPos = () => {
-    let x, y, attempts = 0;
-    do {
-      x = margin + Math.random() * (MAP_WIDTH - margin * 2);
-      y = margin + Math.random() * (MAP_HEIGHT - margin * 2);
-      attempts++;
-    } while (isNearCenter(x, y) && attempts < 20);
-    return { x, y };
-  };
-  
-  // === STILT HOUSES (traditional Vietnamese) ===
-  for (let i = 0; i < 12; i++) {
-    const pos = randPos();
-    obstacles.push({
-      position: pos,
-      width: 80 + Math.random() * 50,
-      height: 60 + Math.random() * 30,
-      depth: 55 + Math.random() * 20,
-      type: 'stilt_house',
-      health: 200,
-      maxHealth: 200,
-      color: '#8B6914',
-      angle: (Math.floor(Math.random() * 4)) * Math.PI / 2, // cardinal directions
-      variant: Math.floor(Math.random() * 3),
-    });
-  }
-  
-  // === MUD HUTS ===
-  for (let i = 0; i < 10; i++) {
-    const pos = randPos();
-    obstacles.push({
-      position: pos,
-      width: 50 + Math.random() * 30,
-      height: 45 + Math.random() * 25,
-      depth: 35 + Math.random() * 15,
-      type: 'mud_hut',
-      health: 120,
-      maxHealth: 120,
-      color: '#8B7355',
-      angle: Math.random() * Math.PI * 2,
-      variant: Math.floor(Math.random() * 3),
-    });
-  }
-  
-  // === BAMBOO CLUSTERS ===
-  for (let i = 0; i < 20; i++) {
-    const pos = randPos();
-    obstacles.push({
-      position: pos,
-      width: 30 + Math.random() * 25,
-      height: 30 + Math.random() * 25,
-      depth: 70 + Math.random() * 40,
-      type: 'bamboo',
-      health: 50,
-      maxHealth: 50,
-      color: '#4a7c3a',
-      angle: Math.random() * Math.PI * 2,
-      variant: Math.floor(Math.random() * 4),
-    });
-  }
-  
-  // === RICE PADDIES (non-collidable water areas) ===
-  for (let i = 0; i < 15; i++) {
-    const pos = randPos();
-    obstacles.push({
-      position: pos,
-      width: 100 + Math.random() * 80,
-      height: 70 + Math.random() * 60,
-      depth: 3,
-      type: 'rice_paddy',
-      health: 9999,
-      maxHealth: 9999,
-      color: '#5a8a4a',
-      angle: Math.random() * Math.PI * 2,
-      variant: Math.floor(Math.random() * 3),
-    });
-  }
-  
-  // === BUDDHA STATUES ===
-  for (let i = 0; i < 6; i++) {
-    const pos = randPos();
-    obstacles.push({
-      position: pos,
-      width: 25 + Math.random() * 15,
-      height: 25 + Math.random() * 15,
-      depth: 45 + Math.random() * 25,
-      type: 'buddha',
-      health: 300,
-      maxHealth: 300,
-      color: '#9ca3af',
-      angle: Math.random() * Math.PI * 2,
-      variant: Math.floor(Math.random() * 3),
-    });
-  }
-  
-  // === WELLS ===
-  for (let i = 0; i < 8; i++) {
-    const pos = randPos();
-    obstacles.push({
-      position: pos,
-      width: 28 + Math.random() * 12,
-      height: 28 + Math.random() * 12,
-      depth: 20,
-      type: 'well',
-      health: 180,
-      maxHealth: 180,
-      color: '#6b7280',
-      angle: 0,
-      variant: Math.floor(Math.random() * 2),
-    });
-  }
-  
-  // === RICE STACKS ===
-  for (let i = 0; i < 18; i++) {
-    const pos = randPos();
-    obstacles.push({
-      position: pos,
-      width: 25 + Math.random() * 20,
-      height: 20 + Math.random() * 15,
-      depth: 30 + Math.random() * 20,
-      type: 'rice_stack',
-      health: 30,
-      maxHealth: 30,
-      color: '#c4a44a',
-      angle: Math.random() * Math.PI * 2,
-      variant: Math.floor(Math.random() * 3),
-    });
-  }
-  
-  // === WOODEN FENCES ===
-  for (let i = 0; i < 15; i++) {
-    const pos = randPos();
-    const horizontal = Math.random() > 0.5;
-    obstacles.push({
-      position: pos,
-      width: horizontal ? 100 + Math.random() * 120 : 12,
-      height: horizontal ? 12 : 100 + Math.random() * 120,
-      depth: 25,
-      type: 'fence',
-      health: 40,
-      maxHealth: 40,
-      color: '#6b4423',
-      angle: 0,
-      variant: Math.floor(Math.random() * 2),
-    });
-  }
-  
-  // === PALM TREES ===
-  for (let i = 0; i < 20; i++) {
-    const pos = randPos();
-    obstacles.push({
-      position: pos,
-      width: 18 + Math.random() * 12,
-      height: 18 + Math.random() * 12,
-      depth: 80 + Math.random() * 40,
-      type: 'palm_tree',
-      health: 60,
-      maxHealth: 60,
-      color: '#2d5016',
-      angle: Math.random() * Math.PI * 2,
-      variant: Math.floor(Math.random() * 3),
-    });
-  }
-  
-  // === BANANA TREES ===
-  for (let i = 0; i < 15; i++) {
-    const pos = randPos();
-    obstacles.push({
-      position: pos,
-      width: 22 + Math.random() * 15,
-      height: 22 + Math.random() * 15,
-      depth: 55 + Math.random() * 25,
-      type: 'banana_tree',
-      health: 35,
-      maxHealth: 35,
-      color: '#3d7a1c',
-      angle: Math.random() * Math.PI * 2,
-      variant: Math.floor(Math.random() * 3),
-    });
-  }
-  
-  // === SAMPANS (boats) ===
-  for (let i = 0; i < 8; i++) {
-    const pos = randPos();
-    obstacles.push({
-      position: pos,
-      width: 50 + Math.random() * 30,
-      height: 18 + Math.random() * 8,
-      depth: 12,
-      type: 'sampan',
-      health: 50,
-      maxHealth: 50,
-      color: '#5c3317',
-      angle: Math.random() * Math.PI * 2,
-      variant: Math.floor(Math.random() * 3),
-    });
-  }
-  
-  // === MARKET STALLS ===
-  for (let i = 0; i < 10; i++) {
-    const pos = randPos();
-    obstacles.push({
-      position: pos,
-      width: 45 + Math.random() * 25,
-      height: 35 + Math.random() * 20,
-      depth: 40 + Math.random() * 15,
-      type: 'market_stall',
-      health: 70,
-      maxHealth: 70,
-      color: '#8B4513',
-      angle: (Math.floor(Math.random() * 4)) * Math.PI / 2,
-      variant: Math.floor(Math.random() * 4),
-    });
-  }
-  
-  // === STONE LANTERNS ===
-  for (let i = 0; i < 12; i++) {
-    const pos = randPos();
-    obstacles.push({
-      position: pos,
-      width: 15 + Math.random() * 8,
-      height: 15 + Math.random() * 8,
-      depth: 35 + Math.random() * 15,
-      type: 'stone_lantern',
-      health: 150,
-      maxHealth: 150,
-      color: '#78716c',
-      angle: 0,
-      variant: Math.floor(Math.random() * 2),
-    });
-  }
-  
-  // === VILLAGE GATES (torii-style) ===
-  for (let i = 0; i < 5; i++) {
-    const pos = randPos();
-    obstacles.push({
-      position: pos,
-      width: 60 + Math.random() * 30,
-      height: 15,
-      depth: 65 + Math.random() * 20,
-      type: 'village_gate',
-      health: 250,
-      maxHealth: 250,
-      color: '#991b1b',
-      angle: (Math.floor(Math.random() * 2)) * Math.PI / 2,
-      variant: 0,
-    });
-  }
-  
-  // === BARRELS ===
-  for (let i = 0; i < 20; i++) {
-    const pos = randPos();
-    obstacles.push({
-      position: pos,
-      width: 18 + Math.random() * 10,
-      height: 18 + Math.random() * 10,
-      depth: 22 + Math.random() * 8,
-      type: 'barrel',
-      health: 45,
-      maxHealth: 45,
-      color: '#5c3317',
-      angle: Math.random() * Math.PI * 2,
-      variant: Math.floor(Math.random() * 3),
-    });
-  }
-  
-  // === CARTS ===
-  for (let i = 0; i < 8; i++) {
-    const pos = randPos();
-    obstacles.push({
-      position: pos,
-      width: 45 + Math.random() * 20,
-      height: 28 + Math.random() * 12,
-      depth: 25,
-      type: 'cart',
-      health: 80,
-      maxHealth: 80,
-      color: '#6b4423',
-      angle: Math.random() * Math.PI * 2,
-      variant: Math.floor(Math.random() * 2),
-    });
-  }
-  
-  return obstacles;
 }
 
 function distance(a: Vector2, b: Vector2): number {
@@ -492,11 +207,7 @@ function angleDiff(from: number, to: number): number {
   return diff;
 }
 
-function rectCollision(
-  pos: Vector2,
-  size: number,
-  obstacle: Obstacle
-): boolean {
+function rectCollision(pos: Vector2, size: number, obstacle: Obstacle): boolean {
   const halfSize = size * 0.7;
   const closestX = Math.max(obstacle.position.x - obstacle.width / 2, 
     Math.min(pos.x, obstacle.position.x + obstacle.width / 2));
@@ -508,6 +219,259 @@ function rectCollision(
   return (dx * dx + dy * dy) < (halfSize * halfSize);
 }
 
+export function createObstacles(chaosLevel: number): Obstacle[] {
+  const obstacles: Obstacle[] = [];
+  const margin = 300;
+  
+  const isNearCenter = (x: number, y: number) => {
+    const cx = MAP_WIDTH / 2, cy = MAP_HEIGHT / 2;
+    return Math.sqrt((x - cx) ** 2 + (y - cy) ** 2) < 200;
+  };
+  
+  const randPos = () => {
+    let x, y, attempts = 0;
+    do {
+      x = margin + Math.random() * (MAP_WIDTH - margin * 2);
+      y = margin + Math.random() * (MAP_HEIGHT - margin * 2);
+      attempts++;
+    } while (isNearCenter(x, y) && attempts < 20);
+    return { x, y };
+  };
+  
+  // Vietnam village objects
+  for (let i = 0; i < 10; i++) {
+    const pos = randPos();
+    obstacles.push({
+      position: pos,
+      width: 80 + Math.random() * 50,
+      height: 60 + Math.random() * 30,
+      depth: 55 + Math.random() * 20,
+      type: 'stilt_house',
+      health: 200,
+      maxHealth: 200,
+      color: '#8B6914',
+      angle: (Math.floor(Math.random() * 4)) * Math.PI / 2,
+      variant: Math.floor(Math.random() * 3),
+    });
+  }
+  
+  for (let i = 0; i < 15; i++) {
+    const pos = randPos();
+    obstacles.push({
+      position: pos,
+      width: 30 + Math.random() * 25,
+      height: 30 + Math.random() * 25,
+      depth: 70 + Math.random() * 40,
+      type: 'bamboo',
+      health: 50,
+      maxHealth: 50,
+      color: '#4a7c3a',
+      angle: Math.random() * Math.PI * 2,
+      variant: Math.floor(Math.random() * 4),
+    });
+  }
+  
+  // CHAOS OBJECTS - Scale with chaos level
+  
+  // Explosive barrels
+  const barrelCount = 15 + chaosLevel * 5;
+  for (let i = 0; i < barrelCount; i++) {
+    const pos = randPos();
+    obstacles.push({
+      position: pos,
+      width: 20,
+      height: 20,
+      depth: 25,
+      type: 'explosive_barrel',
+      health: 30,
+      maxHealth: 30,
+      color: '#dc2626',
+      angle: 0,
+      variant: 0,
+    });
+  }
+  
+  // TNT crates
+  const tntCount = 5 + chaosLevel * 3;
+  for (let i = 0; i < tntCount; i++) {
+    const pos = randPos();
+    obstacles.push({
+      position: pos,
+      width: 30,
+      height: 30,
+      depth: 30,
+      type: 'tnt_crate',
+      health: 50,
+      maxHealth: 50,
+      color: '#991b1b',
+      angle: 0,
+      variant: 0,
+    });
+  }
+  
+  // Power-ups
+  const powerUpTypes: ObstacleType[] = ['health_pack', 'speed_boost', 'rapid_fire', 'triple_shot', 'shield', 'armor_boost'];
+  const powerUpCount = 8 + chaosLevel * 2;
+  for (let i = 0; i < powerUpCount; i++) {
+    const pos = randPos();
+    const type = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
+    obstacles.push({
+      position: pos,
+      width: 25,
+      height: 25,
+      depth: 15,
+      type,
+      health: 9999,
+      maxHealth: 9999,
+      color: '#ffffff',
+      angle: 0,
+      variant: 0,
+      active: true,
+      cooldown: 0,
+    });
+  }
+  
+  // Hazards (scale with chaos)
+  if (chaosLevel >= 1) {
+    for (let i = 0; i < 5 + chaosLevel * 2; i++) {
+      const pos = randPos();
+      const hazardTypes: ObstacleType[] = ['lava_pool', 'acid_lake', 'quicksand', 'ice_patch', 'oil_spill'];
+      obstacles.push({
+        position: pos,
+        width: 60 + Math.random() * 40,
+        height: 60 + Math.random() * 40,
+        depth: 5,
+        type: hazardTypes[Math.floor(Math.random() * hazardTypes.length)],
+        health: 9999,
+        maxHealth: 9999,
+        color: '#ff4500',
+        angle: 0,
+        variant: 0,
+      });
+    }
+  }
+  
+  // Tornadoes (chaos level 2+)
+  if (chaosLevel >= 2) {
+    for (let i = 0; i < chaosLevel; i++) {
+      const pos = randPos();
+      obstacles.push({
+        position: pos,
+        width: 80,
+        height: 80,
+        depth: 100,
+        type: 'tornado',
+        health: 9999,
+        maxHealth: 9999,
+        color: '#6b7280',
+        angle: 0,
+        variant: 0,
+        velocity: { x: (Math.random() - 0.5) * 2, y: (Math.random() - 0.5) * 2 },
+      });
+    }
+  }
+  
+  // Auto turrets (chaos level 2+)
+  if (chaosLevel >= 2) {
+    for (let i = 0; i < 3 + chaosLevel; i++) {
+      const pos = randPos();
+      obstacles.push({
+        position: pos,
+        width: 30,
+        height: 30,
+        depth: 40,
+        type: 'auto_turret',
+        health: 150,
+        maxHealth: 150,
+        color: '#374151',
+        angle: Math.random() * Math.PI * 2,
+        variant: 0,
+        cooldown: 0,
+        targetId: undefined,
+      });
+    }
+  }
+  
+  // Teleport portals (chaos level 3+)
+  if (chaosLevel >= 3) {
+    for (let i = 0; i < 2; i++) {
+      const pos = randPos();
+      obstacles.push({
+        position: pos,
+        width: 50,
+        height: 50,
+        depth: 60,
+        type: 'teleport_portal',
+        health: 9999,
+        maxHealth: 9999,
+        color: '#a855f7',
+        angle: 0,
+        variant: i,
+      });
+    }
+  }
+  
+  // Rolling boulders (chaos level 3+)
+  if (chaosLevel >= 3) {
+    for (let i = 0; i < chaosLevel; i++) {
+      const pos = randPos();
+      obstacles.push({
+        position: pos,
+        width: 40,
+        height: 40,
+        depth: 40,
+        type: 'rolling_boulder',
+        health: 200,
+        maxHealth: 200,
+        color: '#6b7280',
+        angle: 0,
+        variant: 0,
+        velocity: { x: (Math.random() - 0.5) * 3, y: (Math.random() - 0.5) * 3 },
+      });
+    }
+  }
+  
+  // Attack drones (chaos level 4+)
+  if (chaosLevel >= 4) {
+    for (let i = 0; i < chaosLevel - 1; i++) {
+      const pos = randPos();
+      obstacles.push({
+        position: pos,
+        width: 25,
+        height: 25,
+        depth: 30,
+        type: 'attack_drone',
+        health: 80,
+        maxHealth: 80,
+        color: '#ef4444',
+        angle: 0,
+        variant: 0,
+        velocity: { x: 0, y: 0 },
+        targetId: undefined,
+      });
+    }
+  }
+  
+  // Black holes (chaos level 5)
+  if (chaosLevel >= 5) {
+    const pos = randPos();
+    obstacles.push({
+      position: pos,
+      width: 100,
+      height: 100,
+      depth: 100,
+      type: 'black_hole',
+      health: 9999,
+      maxHealth: 9999,
+      color: '#000000',
+      angle: 0,
+      variant: 0,
+    });
+  }
+  
+  return obstacles;
+}
+
 export function updateGame(state: GameState, input: InputState, deltaTime: number): GameState {
   if (state.gameOver || state.paused || !state.gameStarted) return state;
   
@@ -515,18 +479,26 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
   const newState = { ...state };
   newState.time += dt;
   
-  // ===== EASIER CONTROLS - Player Update =====
-  const player = { ...newState.player };
+  // Chaos level escalation
+  newState.chaosTimer += dt;
+  if (newState.chaosTimer > 30000 && newState.chaosLevel < 5) { // Every 30 seconds
+    newState.chaosLevel += 1;
+    newState.chaosTimer = 0;
+    // Add more chaos objects
+    const newObstacles = createObstacles(newState.chaosLevel).filter(o => 
+      !['stilt_house', 'bamboo'].includes(o.type)
+    );
+    newState.obstacles = [...newState.obstacles, ...newObstacles];
+  }
   
-  // Calculate desired movement direction from input
-  let moveX = 0;
-  let moveY = 0;
+  // Player update (same as before)
+  const player = { ...newState.player };
+  let moveX = 0, moveY = 0;
   if (input.up) moveY -= 1;
   if (input.down) moveY += 1;
   if (input.left) moveX -= 1;
   if (input.right) moveX += 1;
   
-  // Normalize diagonal movement
   const moveLen = Math.sqrt(moveX * moveX + moveY * moveY);
   if (moveLen > 0) {
     moveX /= moveLen;
@@ -534,20 +506,15 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
   }
   
   player.moving = moveLen > 0;
-  
-  // EASY CONTROL: Tank body rotates towards movement direction smoothly
   if (player.moving) {
     player.targetAngle = Math.atan2(moveY, moveX);
   }
   
-  // Smooth rotation towards target
   const bodyAngleDiff = angleDiff(player.angle, player.targetAngle);
-  const rotateSpeed = player.moving ? 0.12 : 0.06; // Faster rotation when moving
-  player.angle += bodyAngleDiff * rotateSpeed;
+  player.angle += bodyAngleDiff * (player.moving ? 0.12 : 0.06);
   
-  // Apply acceleration - smooth and responsive
   const accel = 0.5;
-  const decel = 0.88; // Friction
+  const decel = 0.88;
   
   if (player.moving) {
     player.velocity.x += moveX * accel;
@@ -555,28 +522,24 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
     player.trackOffset += 0.4;
   }
   
-  // Friction
   player.velocity.x *= decel;
   player.velocity.y *= decel;
   
-  // Speed limit
   const speed = Math.sqrt(player.velocity.x ** 2 + player.velocity.y ** 2);
-  if (speed > player.speed) {
-    player.velocity.x = (player.velocity.x / speed) * player.speed;
-    player.velocity.y = (player.velocity.y / speed) * player.speed;
+  const maxSpeed = player.speed * (player.speedBoost ? 1.5 : 1);
+  if (speed > maxSpeed) {
+    player.velocity.x = (player.velocity.x / speed) * maxSpeed;
+    player.velocity.y = (player.velocity.y / speed) * maxSpeed;
   }
   
-  // Stop completely when very slow
   if (speed < 0.1 && !player.moving) {
     player.velocity.x = 0;
     player.velocity.y = 0;
   }
   
-  // Move player
   player.position.x += player.velocity.x;
   player.position.y += player.velocity.y;
   
-  // Dust trail when moving
   if (speed > 1.5 && Math.random() > 0.5) {
     const dustPos = {
       x: player.position.x - player.velocity.x * 2 + (Math.random() - 0.5) * 15,
@@ -585,40 +548,95 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
     newState.particles = [...newState.particles, ...createParticles(dustPos, 1, 'dust')];
   }
   
-  // Bounds
   player.position.x = Math.max(player.size, Math.min(MAP_WIDTH - player.size, player.position.x));
   player.position.y = Math.max(player.size, Math.min(MAP_HEIGHT - player.size, player.position.y));
   
-  // EASY CONTROL: Turret smoothly follows mouse (in world coordinates)
   const cameraX = player.position.x - CANVAS_WIDTH / 2;
   const cameraY = player.position.y - CANVAS_HEIGHT / 2;
   const worldMouseX = input.mouseX + cameraX;
   const worldMouseY = input.mouseY + cameraY;
   const targetTurretAngle = Math.atan2(worldMouseY - player.position.y, worldMouseX - player.position.x);
   
-  // Smooth turret rotation
   const turretDiff = angleDiff(player.turretAngle, targetTurretAngle);
-  player.turretAngle += turretDiff * 0.15; // Smooth tracking
+  player.turretAngle += turretDiff * 0.15;
   
-  // Player shooting
-  if (input.shoot && newState.time - player.lastShot > player.fireRate) {
+  // Shooting with power-ups
+  const fireRate = player.rapidFire ? player.fireRate * 0.4 : player.fireRate;
+  if (input.shoot && newState.time - player.lastShot > fireRate) {
     player.lastShot = newState.time;
-    const bullet = createBullet(player);
-    newState.bullets = [...newState.bullets, bullet];
-    newState.particles = [...newState.particles, 
-      ...createParticles(bullet.position, 10, 'muzzle')
-    ];
-    // Screen shake
-    newState.screenShake = {
-      x: (Math.random() - 0.5) * 5,
-      y: (Math.random() - 0.5) * 5,
-    };
+    
+    if (player.tripleShot) {
+      // Triple shot
+      for (let i = -1; i <= 1; i++) {
+        const spreadAngle = player.turretAngle + i * 0.15;
+        const tempTank = { ...player, turretAngle: spreadAngle };
+        const bullet = createBullet(tempTank);
+        newState.bullets = [...newState.bullets, bullet];
+      }
+    } else {
+      const bullet = createBullet(player);
+      newState.bullets = [...newState.bullets, bullet];
+    }
+    
+    newState.particles = [...newState.particles, ...createParticles(
+      { x: player.position.x + Math.cos(player.turretAngle) * player.size * 1.5,
+        y: player.position.y + Math.sin(player.turretAngle) * player.size * 1.5 },
+      10, 'muzzle'
+    )];
+    newState.screenShake = { x: (Math.random() - 0.5) * 5, y: (Math.random() - 0.5) * 5 };
   }
   
-  // Obstacle collision for player (skip non-solid obstacles)
+  // Obstacle collision
   for (const obs of newState.obstacles) {
-    if (obs.type === 'rice_paddy') continue; // Can drive through water
+    if (obs.type === 'rice_paddy') continue;
+    
     if (rectCollision(player.position, player.size, obs)) {
+      // Power-up collection
+      if (['health_pack', 'speed_boost', 'rapid_fire', 'triple_shot', 'shield', 'armor_boost'].includes(obs.type)) {
+        if (obs.active !== false) {
+          switch (obs.type) {
+            case 'health_pack':
+              player.health = Math.min(player.maxHealth, player.health + 30);
+              break;
+            case 'speed_boost':
+              player.speedBoost = 10000; // 10 seconds
+              break;
+            case 'rapid_fire':
+              player.rapidFire = 8000; // 8 seconds
+              break;
+            case 'triple_shot':
+              player.tripleShot = 6000; // 6 seconds
+              break;
+            case 'shield':
+              player.shield = 50;
+              break;
+            case 'armor_boost':
+              player.armorBoost = 12000; // 12 seconds
+              break;
+          }
+          obs.active = false;
+          obs.cooldown = 15000; // Respawn after 15 seconds
+          newState.particles = [...newState.particles, ...createParticles(obs.position, 15, 'confetti')];
+        }
+        continue;
+      }
+      
+      // Hazard effects
+      if (obs.type === 'lava_pool' || obs.type === 'acid_lake') {
+        player.health -= 0.5;
+        if (Math.random() > 0.7) {
+          newState.particles = [...newState.particles, ...createParticles(player.position, 1, 'fire')];
+        }
+      } else if (obs.type === 'quicksand') {
+        player.velocity.x *= 0.95;
+        player.velocity.y *= 0.95;
+      } else if (obs.type === 'ice_patch') {
+        player.velocity.x *= 0.98;
+        player.velocity.y *= 0.98;
+      } else if (obs.type === 'oil_spill') {
+        player.angle += (Math.random() - 0.5) * 0.05;
+      }
+      
       const pushDir = normalize({
         x: player.position.x - obs.position.x,
         y: player.position.y - obs.position.y,
@@ -630,65 +648,41 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
     }
   }
   
+  // Update power-up timers
+  if (player.rapidFire && player.rapidFire > 0) player.rapidFire -= dt;
+  if (player.tripleShot && player.tripleShot > 0) player.tripleShot -= dt;
+  if (player.speedBoost && player.speedBoost > 0) player.speedBoost -= dt;
+  if (player.armorBoost && player.armorBoost > 0) player.armorBoost -= dt;
+  
+  // Respawn power-ups
+  newState.obstacles.forEach(obs => {
+    if (['health_pack', 'speed_boost', 'rapid_fire', 'triple_shot', 'shield', 'armor_boost'].includes(obs.type)) {
+      if (obs.active === false && obs.cooldown && obs.cooldown > 0) {
+        obs.cooldown -= dt;
+        if (obs.cooldown <= 0) {
+          obs.active = true;
+        }
+      }
+    }
+  });
+  
   newState.player = player;
   
-  // Fire trails for damaged player
-  if (player.health < player.maxHealth * 0.3 && Math.random() > 0.6) {
-    newState.particles = [...newState.particles, ...createParticles(
-      { x: player.position.x + (Math.random() - 0.5) * player.size, 
-        y: player.position.y + (Math.random() - 0.5) * player.size }, 
-      1, 'smoke'
-    )];
-  }
-  
-  // ===== Enemy AI =====
+  // Enemy AI (simplified - same as before)
   newState.enemies = newState.enemies.map(enemy => {
     const e = { ...enemy };
-    
-    // Fire trail for damaged enemies
-    if (e.health < e.maxHealth * 0.3 && Math.random() > 0.7) {
-      newState.particles = [...newState.particles, ...createParticles(
-        { x: e.position.x + (Math.random() - 0.5) * e.size, 
-          y: e.position.y + (Math.random() - 0.5) * e.size }, 
-        1, 'smoke'
-      )];
-    }
-    
-    const toPlayer = {
-      x: player.position.x - e.position.x,
-      y: player.position.y - e.position.y,
-    };
+    const toPlayer = { x: player.position.x - e.position.x, y: player.position.y - e.position.y };
     const distToPlayer = Math.sqrt(toPlayer.x ** 2 + toPlayer.y ** 2);
     const angleToPlayer = Math.atan2(toPlayer.y, toPlayer.x);
     
-    // Turret aims at player (smoothly)
     const turretDiff = angleDiff(e.turretAngle, angleToPlayer);
     e.turretAngle += turretDiff * 0.06;
     
-    // Movement AI - circle strafe behavior
-    let targetMoveAngle = angleToPlayer;
-    const idealDist = 300;
-    
-    if (distToPlayer > idealDist + 100) {
-      // Move towards player
-      targetMoveAngle = angleToPlayer;
-    } else if (distToPlayer < idealDist - 100) {
-      // Back away
-      targetMoveAngle = angleToPlayer + Math.PI;
-    } else {
-      // Strafe around player
-      const strafeDir = Math.sin(newState.time * 0.002 + parseFloat(e.id.split('_')[1]) * 3) > 0 ? 1 : -1;
-      targetMoveAngle = angleToPlayer + (Math.PI / 2) * strafeDir;
-    }
-    
-    // Smooth body rotation towards movement
-    const bodyDiff = angleDiff(e.angle, targetMoveAngle);
+    const bodyDiff = angleDiff(e.angle, angleToPlayer);
     e.angle += bodyDiff * 0.06;
     
-    // Apply movement
-    const moveForce = 0.25;
-    e.velocity.x += Math.cos(e.angle) * moveForce;
-    e.velocity.y += Math.sin(e.angle) * moveForce;
+    e.velocity.x += Math.cos(e.angle) * 0.25;
+    e.velocity.y += Math.sin(e.angle) * 0.25;
     e.trackOffset += 0.25;
     e.moving = true;
     
@@ -706,43 +700,36 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
     e.position.x = Math.max(e.size, Math.min(MAP_WIDTH - e.size, e.position.x));
     e.position.y = Math.max(e.size, Math.min(MAP_HEIGHT - e.size, e.position.y));
     
-    // Dust trail for enemies
-    if (eSpeed > 1 && Math.random() > 0.7) {
-      newState.particles = [...newState.particles, ...createParticles(
-        { x: e.position.x - e.velocity.x * 2 + (Math.random() - 0.5) * 10,
-          y: e.position.y - e.velocity.y * 2 + (Math.random() - 0.5) * 10 },
-        1, 'dust'
-      )];
-    }
-    
-    // Obstacle collision for enemies
-    for (const obs of newState.obstacles) {
-      if (rectCollision(e.position, e.size, obs)) {
-        const pushDir = normalize({
-          x: e.position.x - obs.position.x,
-          y: e.position.y - obs.position.y,
-        });
-        e.position.x += pushDir.x * 3;
-        e.position.y += pushDir.y * 3;
-        // Try to navigate around
-        e.angle += 0.3;
-      }
-    }
-    
-    // Enemy shooting - only when turret is aimed
     if (Math.abs(turretDiff) < 0.25 && distToPlayer < 600 && newState.time - e.lastShot > e.fireRate) {
       e.lastShot = newState.time;
       const bullet = createBullet(e);
       newState.bullets = [...newState.bullets, bullet];
-      newState.particles = [...newState.particles, ...createParticles(bullet.position, 6, 'muzzle')];
     }
     
     return e;
   });
   
-  // ===== Update bullets =====
+  // Update bullets
   newState.bullets = newState.bullets.filter(bullet => {
     const b = { ...bullet };
+    
+    // Homing behavior
+    if (b.homing && newState.enemies.length > 0) {
+      let closestEnemy = newState.enemies[0];
+      let closestDist = distance(b.position, closestEnemy.position);
+      newState.enemies.forEach(e => {
+        const d = distance(b.position, e.position);
+        if (d < closestDist) {
+          closestDist = d;
+          closestEnemy = e;
+        }
+      });
+      
+      const toEnemy = normalize({ x: closestEnemy.position.x - b.position.x, y: closestEnemy.position.y - b.position.y });
+      b.velocity.x = b.velocity.x * 0.95 + toEnemy.x * 0.5;
+      b.velocity.y = b.velocity.y * 0.95 + toEnemy.y * 0.5;
+    }
+    
     b.trail = [...b.trail, { ...b.position }].slice(-10);
     b.position.x += b.velocity.x;
     b.position.y += b.velocity.y;
@@ -750,89 +737,74 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
     
     if (b.lifetime <= 0 || b.position.x < 0 || b.position.x > MAP_WIDTH || 
         b.position.y < 0 || b.position.y > MAP_HEIGHT) {
-      if (b.position.x > 0 && b.position.x < MAP_WIDTH && b.position.y > 0 && b.position.y < MAP_HEIGHT) {
-        addGroundDecal(b.position.x, b.position.y, 8, 'scorch');
+      if (b.explosive) {
+        newState.explosions = [...newState.explosions, createExplosion(b.position, 50)];
+        newState.particles = [...newState.particles, ...createParticles(b.position, 20, 'explosion')];
       }
       return false;
     }
     
-    // Bullet-obstacle collision (skip rice paddies - they're water)
+    // Bullet-obstacle collision
     for (let i = 0; i < newState.obstacles.length; i++) {
       const obs = newState.obstacles[i];
-      if (obs.type === 'rice_paddy') continue; // Bullets pass over water
+      if (obs.type === 'rice_paddy') continue;
+      
       if (b.position.x > obs.position.x - obs.width / 2 &&
           b.position.x < obs.position.x + obs.width / 2 &&
           b.position.y > obs.position.y - obs.height / 2 &&
           b.position.y < obs.position.y + obs.height / 2) {
-        newState.particles = [...newState.particles, ...createParticles(b.position, 8, 'spark')];
-        newState.particles = [...newState.particles, ...createParticles(b.position, 3, 'debris')];
-        newState.obstacles = [...newState.obstacles];
-        newState.obstacles[i] = { ...obs, health: obs.health - b.damage };
-        addGroundDecal(b.position.x, b.position.y, 6, 'scorch');
+        
+        // Explosive barrels chain reaction
+        if (obs.type === 'explosive_barrel' || obs.type === 'tnt_crate') {
+          const explosionSize = obs.type === 'tnt_crate' ? 80 : 50;
+          newState.explosions = [...newState.explosions, createExplosion(obs.position, explosionSize)];
+          newState.particles = [...newState.particles, ...createParticles(obs.position, 30, 'explosion')];
+          newState.obstacles = newState.obstacles.filter((_, idx) => idx !== i);
+          
+          // Chain reaction - damage nearby explosives
+          newState.obstacles.forEach(nearbyObs => {
+            if ((nearbyObs.type === 'explosive_barrel' || nearbyObs.type === 'tnt_crate') &&
+                distance(obs.position, nearbyObs.position) < explosionSize * 2) {
+              nearbyObs.health = 0;
+            }
+          });
+        } else {
+          newState.particles = [...newState.particles, ...createParticles(b.position, 8, 'spark')];
+          obs.health -= b.damage;
+        }
+        
+        if (b.explosive) {
+          newState.explosions = [...newState.explosions, createExplosion(b.position, 50)];
+          newState.particles = [...newState.particles, ...createParticles(b.position, 20, 'explosion')];
+        }
+        
         return false;
       }
-    }
-    
-    // Bullet-player collision
-    if (b.ownerId !== player.id && distance(b.position, player.position) < player.size) {
-      newState.player = { ...newState.player, health: newState.player.health - b.damage };
-      newState.particles = [...newState.particles, ...createParticles(b.position, 10, 'spark')];
-      newState.screenShake = { x: (Math.random() - 0.5) * 8, y: (Math.random() - 0.5) * 8 };
-      if (newState.player.health <= 0) {
-        newState.gameOver = true;
-        newState.explosions = [...newState.explosions, createExplosion(player.position, 100)];
-        newState.particles = [...newState.particles, ...createParticles(player.position, 50, 'explosion')];
-        newState.particles = [...newState.particles, ...createParticles(player.position, 25, 'smoke')];
-        newState.particles = [...newState.particles, ...createParticles(player.position, 15, 'spark')];
-        addGroundDecal(player.position.x, player.position.y, 60, 'crater');
-        addGroundDecal(player.position.x, player.position.y, 80, 'scorch');
-      }
-      return false;
     }
     
     // Bullet-enemy collision
     for (let i = 0; i < newState.enemies.length; i++) {
       const enemy = newState.enemies[i];
       if (b.ownerId === player.id && distance(b.position, enemy.position) < enemy.size) {
-        newState.enemies = [...newState.enemies];
         newState.enemies[i] = { ...enemy, health: enemy.health - b.damage };
         newState.particles = [...newState.particles, ...createParticles(b.position, 8, 'spark')];
         
         if (newState.enemies[i].health <= 0) {
           newState.explosions = [...newState.explosions, createExplosion(enemy.position, 70)];
           newState.particles = [...newState.particles, ...createParticles(enemy.position, 35, 'explosion')];
-          newState.particles = [...newState.particles, ...createParticles(enemy.position, 18, 'smoke')];
-          newState.particles = [...newState.particles, ...createParticles(enemy.position, 12, 'debris')];
-          newState.particles = [...newState.particles, ...createParticles(enemy.position, 10, 'spark')];
-          addGroundDecal(enemy.position.x, enemy.position.y, 40, 'crater');
-          addGroundDecal(enemy.position.x, enemy.position.y, 60, 'scorch');
           newState.enemies = newState.enemies.filter((_, idx) => idx !== i);
           newState.score += 100;
-          newState.player = { ...newState.player, kills: newState.player.kills + 1 };
-          newState.screenShake = { x: (Math.random() - 0.5) * 10, y: (Math.random() - 0.5) * 10 };
+          newState.player.kills += 1;
         }
         return false;
       }
-    }
-    
-    // Trail particles
-    if (Math.random() > 0.6) {
-      newState.particles = [...newState.particles, ...createParticles(b.position, 1, 'trail')];
     }
     
     return true;
   });
   
   // Remove destroyed obstacles
-  newState.obstacles = newState.obstacles.filter(obs => {
-    if (obs.health <= 0) {
-      newState.particles = [...newState.particles, ...createParticles(obs.position, 15, 'debris')];
-      newState.explosions = [...newState.explosions, createExplosion(obs.position, 40)];
-      addGroundDecal(obs.position.x, obs.position.y, 25, 'scorch');
-      return false;
-    }
-    return true;
-  });
+  newState.obstacles = newState.obstacles.filter(obs => obs.health > 0);
   
   // Update particles
   newState.particles = newState.particles.filter(p => {
@@ -840,23 +812,14 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
     p.position.y += p.velocity.y;
     p.velocity.x *= 0.95;
     p.velocity.y *= 0.95;
-    if (p.type === 'smoke') {
-      p.velocity.y -= 0.03;
-      p.size += 0.15;
-    }
-    if (p.type === 'dust') {
-      p.size += 0.08;
-    }
+    if (p.type === 'smoke') p.velocity.y -= 0.03;
     p.rotation += p.rotationSpeed;
     p.lifetime -= dt;
     p.opacity = Math.max(0, p.lifetime / p.maxLifetime);
     return p.lifetime > 0;
   });
   
-  // Limit particles
-  if (newState.particles.length > 500) {
-    newState.particles = newState.particles.slice(-500);
-  }
+  if (newState.particles.length > 500) newState.particles = newState.particles.slice(-500);
   
   // Update explosions
   newState.explosions = newState.explosions.filter(e => {
@@ -865,11 +828,7 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
     return e.lifetime > 0;
   });
   
-  // Screen shake decay
-  newState.screenShake = {
-    x: newState.screenShake.x * 0.88,
-    y: newState.screenShake.y * 0.88,
-  };
+  newState.screenShake = { x: newState.screenShake.x * 0.88, y: newState.screenShake.y * 0.88 };
   
   // Wave management
   if (newState.enemies.length === 0) {
@@ -881,10 +840,7 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
     }
   }
   
-  // Wave announcement countdown
-  if (newState.waveAnnouncement > 0) {
-    newState.waveAnnouncement = Math.max(0, newState.waveAnnouncement - dt);
-  }
+  if (newState.waveAnnouncement > 0) newState.waveAnnouncement = Math.max(0, newState.waveAnnouncement - dt);
   
   return newState;
 }
@@ -903,7 +859,7 @@ export function initGameState(): GameState {
     bullets: [],
     particles: [],
     explosions: [],
-    obstacles: createObstacles(),
+    obstacles: createObstacles(1),
     score: 0,
     wave: 1,
     gameOver: false,
@@ -912,5 +868,7 @@ export function initGameState(): GameState {
     screenShake: { x: 0, y: 0 },
     time: 0,
     waveAnnouncement: 2000,
+    chaosLevel: 1,
+    chaosTimer: 0,
   };
 }

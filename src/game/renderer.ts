@@ -296,6 +296,26 @@ function drawObstacle2D5(ctx: CanvasRenderingContext2D, obs: Obstacle, time: num
     case 'village_gate': drawVillageGate(ctx, obs, time); break;
     case 'barrel': drawBarrel(ctx, obs, time); break;
     case 'cart': drawCart(ctx, obs, time); break;
+    // Chaos objects
+    case 'explosive_barrel': drawExplosiveBarrel(ctx, obs, time); break;
+    case 'tnt_crate': drawTNTCrate(ctx, obs, time); break;
+    case 'health_pack': drawHealthPack(ctx, obs, time); break;
+    case 'speed_boost': drawSpeedBoost(ctx, obs, time); break;
+    case 'rapid_fire': drawRapidFire(ctx, obs, time); break;
+    case 'triple_shot': drawTripleShot(ctx, obs, time); break;
+    case 'shield': drawShield(ctx, obs, time); break;
+    case 'armor_boost': drawArmorBoost(ctx, obs, time); break;
+    case 'lava_pool': drawLavaPool(ctx, obs, time); break;
+    case 'acid_lake': drawAcidLake(ctx, obs, time); break;
+    case 'quicksand': drawQuicksand(ctx, obs, time); break;
+    case 'ice_patch': drawIcePatch(ctx, obs, time); break;
+    case 'oil_spill': drawOilSpill(ctx, obs, time); break;
+    case 'tornado': drawTornado(ctx, obs, time); break;
+    case 'auto_turret': drawAutoTurret(ctx, obs, time); break;
+    case 'teleport_portal': drawTeleportPortal(ctx, obs, time); break;
+    case 'rolling_boulder': drawRollingBoulder(ctx, obs, time); break;
+    case 'attack_drone': drawAttackDrone(ctx, obs, time); break;
+    case 'black_hole': drawBlackHole(ctx, obs, time); break;
     default: break;
   }
 }
@@ -1212,6 +1232,667 @@ function drawCart(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
   ctx.beginPath();
   ctx.ellipse(0, 0, width * 0.3, height * 0.2, 0, 0, Math.PI * 2);
   ctx.fill();
+  
+  ctx.restore();
+}
+
+// ===== CHAOS OBJECTS =====
+
+function drawExplosiveBarrel(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  const { position, width, depth } = obs;
+  const r = width * 0.45;
+  const pulse = Math.sin(time * 0.005) * 0.1 + 0.9;
+  
+  ctx.save();
+  ctx.translate(position.x, position.y);
+  
+  // Warning glow
+  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 2);
+  glow.addColorStop(0, `rgba(255, 50, 0, ${0.1 * pulse})`);
+  glow.addColorStop(1, 'rgba(255, 50, 0, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 2, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Barrel body
+  const barrelGrad = ctx.createLinearGradient(-r, 0, r, 0);
+  barrelGrad.addColorStop(0, '#991b1b');
+  barrelGrad.addColorStop(0.3, '#dc2626');
+  barrelGrad.addColorStop(0.5, '#ef4444');
+  barrelGrad.addColorStop(0.7, '#dc2626');
+  barrelGrad.addColorStop(1, '#991b1b');
+  ctx.fillStyle = barrelGrad;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, r, r * 0.7, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Hazard stripes
+  ctx.fillStyle = '#fbbf24';
+  ctx.fillRect(-r * 0.8, -3, r * 1.6, 2);
+  ctx.fillRect(-r * 0.8, 3, r * 1.6, 2);
+  
+  // Metal bands
+  ctx.strokeStyle = '#374151';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(0, -2, r * 0.95, r * 0.65, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  // Top
+  ctx.fillStyle = '#7f1d1d';
+  ctx.beginPath();
+  ctx.ellipse(0, -depth * 0.3, r * 0.85, r * 0.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Explosion symbol
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('💥', 0, -depth * 0.3);
+  
+  ctx.restore();
+}
+
+function drawTNTCrate(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  const { position, width, depth } = obs;
+  const pulse = Math.sin(time * 0.004) * 0.1 + 0.9;
+  
+  ctx.save();
+  ctx.translate(position.x, position.y);
+  
+  // Warning glow
+  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, width);
+  glow.addColorStop(0, `rgba(255, 0, 0, ${0.15 * pulse})`);
+  glow.addColorStop(1, 'rgba(255, 0, 0, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, width, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Crate body
+  ctx.fillStyle = '#7f1d1d';
+  ctx.fillRect(-width / 2, -width / 2, width, width);
+  
+  // South face
+  ctx.fillStyle = '#450a0a';
+  ctx.fillRect(-width / 2, width / 2, width, depth * 0.4);
+  
+  // Wood texture
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+  ctx.lineWidth = 0.5;
+  for (let i = -width / 2 + 5; i < width / 2; i += 8) {
+    ctx.beginPath();
+    ctx.moveTo(i, -width / 2);
+    ctx.lineTo(i, width / 2);
+    ctx.stroke();
+  }
+  
+  // TNT label
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('TNT', 0, 0);
+  
+  // Border
+  ctx.strokeStyle = '#450a0a';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-width / 2, -width / 2, width, width);
+  
+  ctx.restore();
+}
+
+function drawHealthPack(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  if (obs.active === false) return;
+  const { position, width } = obs;
+  const bob = Math.sin(time * 0.003) * 3;
+  
+  ctx.save();
+  ctx.translate(position.x, position.y + bob);
+  
+  // Glow
+  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, width);
+  glow.addColorStop(0, 'rgba(34, 197, 94, 0.3)');
+  glow.addColorStop(1, 'rgba(34, 197, 94, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, width, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Box
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(-width / 2, -width / 2, width, width);
+  ctx.strokeStyle = '#16a34a';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-width / 2, -width / 2, width, width);
+  
+  // Cross
+  ctx.fillStyle = '#16a34a';
+  ctx.fillRect(-width * 0.1, -width * 0.35, width * 0.2, width * 0.7);
+  ctx.fillRect(-width * 0.35, -width * 0.1, width * 0.7, width * 0.2);
+  
+  ctx.restore();
+}
+
+function drawSpeedBoost(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  if (obs.active === false) return;
+  const { position, width } = obs;
+  const bob = Math.sin(time * 0.004) * 3;
+  
+  ctx.save();
+  ctx.translate(position.x, position.y + bob);
+  
+  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, width);
+  glow.addColorStop(0, 'rgba(59, 130, 246, 0.3)');
+  glow.addColorStop(1, 'rgba(59, 130, 246, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, width, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.fillStyle = '#3b82f6';
+  ctx.beginPath();
+  ctx.arc(0, 0, width * 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('⚡', 0, 0);
+  
+  ctx.restore();
+}
+
+function drawRapidFire(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  if (obs.active === false) return;
+  const { position, width } = obs;
+  const bob = Math.sin(time * 0.005) * 3;
+  
+  ctx.save();
+  ctx.translate(position.x, position.y + bob);
+  
+  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, width);
+  glow.addColorStop(0, 'rgba(249, 115, 22, 0.3)');
+  glow.addColorStop(1, 'rgba(249, 115, 22, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, width, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.fillStyle = '#f97316';
+  ctx.beginPath();
+  ctx.arc(0, 0, width * 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🔥', 0, 0);
+  
+  ctx.restore();
+}
+
+function drawTripleShot(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  if (obs.active === false) return;
+  const { position, width } = obs;
+  const bob = Math.sin(time * 0.004) * 3;
+  
+  ctx.save();
+  ctx.translate(position.x, position.y + bob);
+  
+  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, width);
+  glow.addColorStop(0, 'rgba(168, 85, 247, 0.3)');
+  glow.addColorStop(1, 'rgba(168, 85, 247, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, width, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.fillStyle = '#a855f7';
+  ctx.beginPath();
+  ctx.arc(0, 0, width * 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('3x', 0, 0);
+  
+  ctx.restore();
+}
+
+function drawShield(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  if (obs.active === false) return;
+  const { position, width } = obs;
+  const bob = Math.sin(time * 0.003) * 3;
+  
+  ctx.save();
+  ctx.translate(position.x, position.y + bob);
+  
+  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, width);
+  glow.addColorStop(0, 'rgba(6, 182, 212, 0.3)');
+  glow.addColorStop(1, 'rgba(6, 182, 212, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, width, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.fillStyle = '#06b6d4';
+  ctx.beginPath();
+  ctx.arc(0, 0, width * 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🛡', 0, 0);
+  
+  ctx.restore();
+}
+
+function drawArmorBoost(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  if (obs.active === false) return;
+  const { position, width } = obs;
+  const bob = Math.sin(time * 0.003) * 3;
+  
+  ctx.save();
+  ctx.translate(position.x, position.y + bob);
+  
+  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, width);
+  glow.addColorStop(0, 'rgba(107, 114, 128, 0.3)');
+  glow.addColorStop(1, 'rgba(107, 114, 128, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, width, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.fillStyle = '#6b7280';
+  ctx.beginPath();
+  ctx.arc(0, 0, width * 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🔰', 0, 0);
+  
+  ctx.restore();
+}
+
+function drawLavaPool(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  const { position, width, height } = obs;
+  
+  ctx.save();
+  ctx.translate(position.x, position.y);
+  
+  // Lava glow
+  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, width * 0.7);
+  glow.addColorStop(0, 'rgba(255, 100, 0, 0.4)');
+  glow.addColorStop(0.5, 'rgba(255, 50, 0, 0.2)');
+  glow.addColorStop(1, 'rgba(255, 0, 0, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, width * 0.7, height * 0.7, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Lava surface
+  const lavaGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, width * 0.5);
+  lavaGrad.addColorStop(0, '#ff6b00');
+  lavaGrad.addColorStop(0.5, '#ff4500');
+  lavaGrad.addColorStop(1, '#cc0000');
+  ctx.fillStyle = lavaGrad;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, width * 0.5, height * 0.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Bubbles
+  for (let i = 0; i < 5; i++) {
+    const bx = Math.sin(time * 0.002 + i * 1.5) * width * 0.3;
+    const by = Math.cos(time * 0.003 + i * 2) * height * 0.3;
+    const br = 3 + Math.sin(time * 0.005 + i) * 2;
+    ctx.fillStyle = `rgba(255, 200, 0, ${0.5 + Math.sin(time * 0.004 + i) * 0.3})`;
+    ctx.beginPath();
+    ctx.arc(bx, by, br, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  ctx.restore();
+}
+
+function drawAcidLake(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  const { position, width, height } = obs;
+  
+  ctx.save();
+  ctx.translate(position.x, position.y);
+  
+  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, width * 0.7);
+  glow.addColorStop(0, 'rgba(0, 255, 0, 0.3)');
+  glow.addColorStop(1, 'rgba(0, 255, 0, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, width * 0.7, height * 0.7, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  const acidGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, width * 0.5);
+  acidGrad.addColorStop(0, '#00ff00');
+  acidGrad.addColorStop(0.5, '#00cc00');
+  acidGrad.addColorStop(1, '#009900');
+  ctx.fillStyle = acidGrad;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, width * 0.5, height * 0.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Bubbles
+  for (let i = 0; i < 4; i++) {
+    const bx = Math.sin(time * 0.003 + i * 2) * width * 0.25;
+    const by = Math.cos(time * 0.002 + i * 1.5) * height * 0.25;
+    ctx.fillStyle = `rgba(150, 255, 150, ${0.4 + Math.sin(time * 0.005 + i) * 0.2})`;
+    ctx.beginPath();
+    ctx.arc(bx, by, 2 + Math.sin(time * 0.004 + i) * 1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  ctx.restore();
+}
+
+function drawQuicksand(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  const { position, width, height } = obs;
+  
+  ctx.save();
+  ctx.translate(position.x, position.y);
+  
+  const sandGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, width * 0.5);
+  sandGrad.addColorStop(0, '#8b7355');
+  sandGrad.addColorStop(0.5, '#a0845c');
+  sandGrad.addColorStop(1, '#6b5b45');
+  ctx.fillStyle = sandGrad;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, width * 0.5, height * 0.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Swirl pattern
+  ctx.strokeStyle = 'rgba(100, 80, 50, 0.3)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 3; i++) {
+    const r = width * 0.15 * (i + 1);
+    ctx.beginPath();
+    ctx.arc(0, 0, r, time * 0.001 + i, time * 0.001 + i + Math.PI);
+    ctx.stroke();
+  }
+  
+  ctx.restore();
+}
+
+function drawIcePatch(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  const { position, width, height } = obs;
+  
+  ctx.save();
+  ctx.translate(position.x, position.y);
+  
+  const iceGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, width * 0.5);
+  iceGrad.addColorStop(0, 'rgba(200, 230, 255, 0.6)');
+  iceGrad.addColorStop(0.5, 'rgba(150, 200, 255, 0.4)');
+  iceGrad.addColorStop(1, 'rgba(100, 150, 255, 0.2)');
+  ctx.fillStyle = iceGrad;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, width * 0.5, height * 0.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Shine
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.beginPath();
+  ctx.ellipse(-width * 0.15, -height * 0.15, width * 0.15, height * 0.1, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.restore();
+}
+
+function drawOilSpill(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  const { position, width, height } = obs;
+  
+  ctx.save();
+  ctx.translate(position.x, position.y);
+  
+  const oilGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, width * 0.5);
+  oilGrad.addColorStop(0, 'rgba(20, 20, 30, 0.7)');
+  oilGrad.addColorStop(0.5, 'rgba(30, 30, 40, 0.5)');
+  oilGrad.addColorStop(1, 'rgba(40, 40, 50, 0.3)');
+  ctx.fillStyle = oilGrad;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, width * 0.5, height * 0.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Rainbow sheen
+  const sheenGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, width * 0.4);
+  sheenGrad.addColorStop(0, 'rgba(255, 0, 255, 0.1)');
+  sheenGrad.addColorStop(0.33, 'rgba(0, 255, 255, 0.1)');
+  sheenGrad.addColorStop(0.66, 'rgba(255, 255, 0, 0.1)');
+  sheenGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = sheenGrad;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, width * 0.4, height * 0.4, time * 0.001, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.restore();
+}
+
+function drawTornado(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  const { position, width, depth } = obs;
+  
+  ctx.save();
+  ctx.translate(position.x, position.y);
+  
+  // Tornado funnel
+  for (let i = 0; i < 10; i++) {
+    const t = i / 10;
+    const r = width * 0.3 * (1 - t * 0.5);
+    const y = -depth * t;
+    const rot = time * 0.01 + i * 0.5;
+    
+    ctx.fillStyle = `rgba(100, 100, 120, ${0.3 - t * 0.2})`;
+    ctx.beginPath();
+    ctx.ellipse(Math.cos(rot) * r * 0.2, y, r, r * 0.3, rot, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  // Debris
+  for (let i = 0; i < 8; i++) {
+    const angle = time * 0.005 + i * 0.8;
+    const r = width * 0.4;
+    const dx = Math.cos(angle) * r;
+    const dy = Math.sin(angle) * r * 0.3 - depth * 0.3;
+    ctx.fillStyle = 'rgba(80, 60, 40, 0.6)';
+    ctx.fillRect(dx - 2, dy - 2, 4, 4);
+  }
+  
+  ctx.restore();
+}
+
+function drawAutoTurret(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  const { position, width, depth } = obs;
+  
+  ctx.save();
+  ctx.translate(position.x, position.y);
+  
+  // Base
+  ctx.fillStyle = '#374151';
+  ctx.beginPath();
+  ctx.ellipse(0, 3, width * 0.5, width * 0.3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Turret body
+  ctx.fillStyle = '#4b5563';
+  ctx.fillRect(-width * 0.3, -depth * 0.5, width * 0.6, depth * 0.5);
+  
+  // Gun barrel
+  ctx.fillStyle = '#1f2937';
+  ctx.save();
+  ctx.rotate(obs.angle);
+  ctx.fillRect(0, -3, width * 0.6, 6);
+  ctx.restore();
+  
+  // Red light
+  const blink = Math.sin(time * 0.005) > 0;
+  if (blink) {
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(0, -depth * 0.3, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  ctx.restore();
+}
+
+function drawTeleportPortal(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  const { position, width, variant } = obs;
+  const color = variant === 0 ? '#a855f7' : '#06b6d4';
+  
+  ctx.save();
+  ctx.translate(position.x, position.y);
+  
+  // Portal ring
+  for (let i = 0; i < 3; i++) {
+    const r = width * 0.4 - i * 5;
+    const rot = time * 0.003 * (variant === 0 ? 1 : -1) + i * 0.5;
+    
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3 - i;
+    ctx.globalAlpha = 0.7 - i * 0.2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r, r * 0.6, rot, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  
+  // Portal center
+  const centerGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, width * 0.3);
+  centerGrad.addColorStop(0, color);
+  centerGrad.addColorStop(0.5, `${color}88`);
+  centerGrad.addColorStop(1, 'transparent');
+  ctx.globalAlpha = 0.5 + Math.sin(time * 0.004) * 0.2;
+  ctx.fillStyle = centerGrad;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, width * 0.3, width * 0.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+function drawRollingBoulder(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  const { position, width, velocity } = obs;
+  
+  ctx.save();
+  ctx.translate(position.x, position.y);
+  ctx.rotate(time * 0.005 * (velocity?.x || 1));
+  
+  // Boulder
+  const boulderGrad = ctx.createRadialGradient(-width * 0.1, -width * 0.1, 0, 0, 0, width * 0.5);
+  boulderGrad.addColorStop(0, '#9ca3af');
+  boulderGrad.addColorStop(0.5, '#6b7280');
+  boulderGrad.addColorStop(1, '#4b5563');
+  ctx.fillStyle = boulderGrad;
+  ctx.beginPath();
+  ctx.arc(0, 0, width * 0.5, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Cracks
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-width * 0.2, -width * 0.1);
+  ctx.lineTo(width * 0.1, width * 0.2);
+  ctx.stroke();
+  
+  ctx.restore();
+}
+
+function drawAttackDrone(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  const { position, width } = obs;
+  const hover = Math.sin(time * 0.005) * 3;
+  
+  ctx.save();
+  ctx.translate(position.x, position.y + hover);
+  
+  // Drone body
+  ctx.fillStyle = '#ef4444';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, width * 0.4, width * 0.3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Propellers
+  const propAngle = time * 0.02;
+  ctx.strokeStyle = '#7f1d1d';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 4; i++) {
+    const angle = propAngle + i * Math.PI / 2;
+    const px = Math.cos(angle) * width * 0.3;
+    const py = Math.sin(angle) * width * 0.2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(px, py);
+    ctx.stroke();
+  }
+  
+  // Red eye
+  ctx.fillStyle = '#fbbf24';
+  ctx.beginPath();
+  ctx.arc(0, 0, 3, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.restore();
+}
+
+function drawBlackHole(ctx: CanvasRenderingContext2D, obs: Obstacle, time: number) {
+  const { position, width } = obs;
+  
+  ctx.save();
+  ctx.translate(position.x, position.y);
+  
+  // Accretion disk
+  for (let i = 0; i < 5; i++) {
+    const r = width * 0.3 + i * 10;
+    const rot = time * 0.002 + i * 0.3;
+    ctx.strokeStyle = `rgba(147, 51, 234, ${0.5 - i * 0.1})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r, r * 0.4, rot, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  
+  // Event horizon
+  const holeGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, width * 0.25);
+  holeGrad.addColorStop(0, '#000000');
+  holeGrad.addColorStop(0.7, '#1a0033');
+  holeGrad.addColorStop(1, 'rgba(75, 0, 130, 0)');
+  ctx.fillStyle = holeGrad;
+  ctx.beginPath();
+  ctx.arc(0, 0, width * 0.25, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Gravitational lensing effect
+  ctx.strokeStyle = 'rgba(200, 150, 255, 0.3)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 8; i++) {
+    const angle = time * 0.001 + i * Math.PI / 4;
+    const r1 = width * 0.25;
+    const r2 = width * 0.5;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(angle) * r1, Math.sin(angle) * r1 * 0.4);
+    ctx.quadraticCurveTo(
+      Math.cos(angle + 0.5) * (r1 + r2) / 2,
+      Math.sin(angle + 0.5) * (r1 + r2) / 2 * 0.4,
+      Math.cos(angle + 1) * r2,
+      Math.sin(angle + 1) * r2 * 0.4
+    );
+    ctx.stroke();
+  }
   
   ctx.restore();
 }
