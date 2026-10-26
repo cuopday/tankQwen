@@ -1,15 +1,36 @@
 import { GameState, Tank, Bullet, Particle, Explosion, Obstacle, Vector2, ObstacleType } from './types';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, MAP_WIDTH, MAP_HEIGHT } from './engine';
 import { drawDetailedTank } from './EnhancedGraphics';
+import { drawRealisticTank, LightingSystem } from './RealisticGraphics';
 
 let groundDecals: Array<{x: number; y: number; radius: number; opacity: number; type: 'scorch' | 'crater'}> = [];
 const MAX_DECALS = 80;
+
+// Global lighting system
+const lightingSystem = new LightingSystem();
 
 export function renderGame(ctx: CanvasRenderingContext2D, state: GameState, time: number) {
   const camera = {
     x: state.player.position.x - CANVAS_WIDTH / 2 + state.screenShake.x,
     y: state.player.position.y - CANVAS_HEIGHT / 2 + state.screenShake.y,
   };
+
+  // Update lighting system
+  lightingSystem.clearDynamicLights();
+  
+  // Add dynamic lights from explosions
+  state.explosions.forEach(exp => {
+    const intensity = exp.lifetime / exp.maxLifetime;
+    lightingSystem.addLight(exp.position, '#ff8844', intensity * 0.8, exp.maxRadius * 2);
+  });
+  
+  // Add light from player tank
+  lightingSystem.addLight(state.player.position, '#ffffff', 0.3, 200);
+  
+  // Add lights from enemy tanks
+  state.enemies.forEach(enemy => {
+    lightingSystem.addLight(enemy.position, '#ffaaaa', 0.2, 150);
+  });
 
   ctx.save();
   ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -37,11 +58,11 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameState, time
     drawables.push({ y: obs.position.y + obs.height / 2, draw: () => drawObstacle2D5(ctx, obs, time) });
   });
   
-  // Tanks (using enhanced graphics)
+  // Tanks (using realistic PBR graphics)
   state.enemies.forEach(tank => {
-    drawables.push({ y: tank.position.y, draw: () => drawDetailedTank(ctx, tank, time) });
+    drawables.push({ y: tank.position.y, draw: () => drawRealisticTank(ctx, tank, time, lightingSystem) });
   });
-  drawables.push({ y: state.player.position.y, draw: () => drawDetailedTank(ctx, state.player, time) });
+  drawables.push({ y: state.player.position.y, draw: () => drawRealisticTank(ctx, state.player, time, lightingSystem) });
   
   // Bullets
   state.bullets.forEach(b => {
@@ -70,6 +91,9 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameState, time
   
   ctx.restore();
   
+  // Weather effects
+  drawWeatherEffects(ctx, state, time);
+  
   // Post-processing
   drawVignette(ctx);
   drawMistOverlay(ctx, time);
@@ -88,7 +112,7 @@ function drawBackground(ctx: CanvasRenderingContext2D, time: number) {
 }
 
 function drawVietnamGround(ctx: CanvasRenderingContext2D, camera: Vector2, time: number, state: GameState) {
-  // Base muddy ground with gradient
+  // Base muddy ground with realistic gradient
   const groundGrad = ctx.createRadialGradient(
     camera.x + CANVAS_WIDTH / 2, camera.y + CANVAS_HEIGHT / 2, 0,
     camera.x + CANVAS_WIDTH / 2, camera.y + CANVAS_HEIGHT / 2, CANVAS_WIDTH
@@ -99,7 +123,7 @@ function drawVietnamGround(ctx: CanvasRenderingContext2D, camera: Vector2, time:
   ctx.fillStyle = groundGrad;
   ctx.fillRect(0, 0, MAP_WIDTH, MAP_HEIGHT);
   
-  // Enhanced dirt patches with better texture
+  // Enhanced terrain with height variation and details
   const tileSize = 100;
   const startX = Math.floor(camera.x / tileSize) * tileSize;
   const startY = Math.floor(camera.y / tileSize) * tileSize;
@@ -109,44 +133,114 @@ function drawVietnamGround(ctx: CanvasRenderingContext2D, camera: Vector2, time:
       const hash = Math.sin(x * 0.01 + y * 0.013) * 10000;
       const n = hash - Math.floor(hash);
       
+      // Height variation (subtle elevation changes)
+      const heightVariation = Math.sin(x * 0.02 + y * 0.015) * 0.1;
+      
       if (n > 0.6) {
-        // Dirt patch with gradient
+        // Dirt patch with realistic shading
         const dirtGrad = ctx.createRadialGradient(
           x + tileSize/2, y + tileSize/2, 0,
           x + tileSize/2, y + tileSize/2, tileSize * 0.4
         );
-        dirtGrad.addColorStop(0, `rgba(100, 75, 45, ${0.15 + n * 0.1})`);
-        dirtGrad.addColorStop(0.7, `rgba(85, 65, 38, ${0.1 + n * 0.08})`);
+        dirtGrad.addColorStop(0, `rgba(100, 75, 45, ${0.15 + n * 0.1 + heightVariation})`);
+        dirtGrad.addColorStop(0.7, `rgba(85, 65, 38, ${0.1 + n * 0.08 + heightVariation})`);
         dirtGrad.addColorStop(1, 'rgba(70, 55, 30, 0)');
         ctx.fillStyle = dirtGrad;
         ctx.beginPath();
         ctx.ellipse(x + tileSize/2, y + tileSize/2, tileSize * 0.4, tileSize * 0.3, n * Math.PI, 0, Math.PI * 2);
         ctx.fill();
+        
+        // Dirt texture (small particles)
+        for (let d = 0; d < 8; d++) {
+          const dx = x + tileSize/2 + (Math.sin(d * 2.3 + n * 10) * tileSize * 0.3);
+          const dy = y + tileSize/2 + (Math.cos(d * 1.7 + n * 10) * tileSize * 0.2);
+          ctx.fillStyle = `rgba(90, 70, 40, ${0.1 + heightVariation})`;
+          ctx.beginPath();
+          ctx.arc(dx, dy, 1 + Math.random(), 0, Math.PI * 2);
+          ctx.fill();
+        }
       } else if (n > 0.3) {
-        // Enhanced grass tufts
+        // Enhanced grass tufts with variation
         for (let g = 0; g < 5; g++) {
           const gx = x + (n * 100 + g * 20) % tileSize;
           const gy = y + (n * 70 + g * 25) % tileSize;
-          const grassGrad = ctx.createRadialGradient(gx, gy, 0, gx, gy, 5);
-          grassGrad.addColorStop(0, `rgba(70, 110, 50, ${0.2})`);
-          grassGrad.addColorStop(1, 'rgba(60, 90, 40, 0)');
+          const grassHeight = 3 + Math.sin(g * 1.5 + n * 5) * 2;
+          
+          // Grass blade
+          const grassGrad = ctx.createLinearGradient(gx, gy, gx, gy - grassHeight);
+          grassGrad.addColorStop(0, `rgba(60, 90, 40, ${0.3 + heightVariation})`);
+          grassGrad.addColorStop(1, `rgba(80, 120, 50, ${0.1 + heightVariation})`);
           ctx.fillStyle = grassGrad;
           ctx.beginPath();
-          ctx.ellipse(gx, gy, 5, 3, g * 0.5, 0, Math.PI * 2);
+          ctx.ellipse(gx, gy, 2, grassHeight, g * 0.3, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Grass highlight
+          ctx.fillStyle = `rgba(100, 150, 60, ${0.1 + heightVariation})`;
+          ctx.beginPath();
+          ctx.ellipse(gx - 0.5, gy - grassHeight * 0.3, 1, grassHeight * 0.5, g * 0.3, 0, Math.PI * 2);
           ctx.fill();
         }
       }
       
-      // Small pebbles
+      // Small pebbles with realistic shading
       if (n > 0.8) {
         for (let p = 0; p < 2; p++) {
           const px = x + (n * 50 + p * 40) % tileSize;
           const py = y + (n * 80 + p * 30) % tileSize;
-          ctx.fillStyle = `rgba(120, 110, 90, ${0.15})`;
+          const pebbleSize = 1.5 + (n * 2);
+          
+          // Pebble shadow
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
           ctx.beginPath();
-          ctx.arc(px, py, 1.5 + (n * 2), 0, Math.PI * 2);
+          ctx.ellipse(px + 0.5, py + 0.5, pebbleSize, pebbleSize * 0.7, 0, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Pebble body
+          const pebbleGrad = ctx.createRadialGradient(px - 0.5, py - 0.5, 0, px, py, pebbleSize);
+          pebbleGrad.addColorStop(0, `rgba(140, 130, 110, ${0.3 + heightVariation})`);
+          pebbleGrad.addColorStop(0.7, `rgba(120, 110, 90, ${0.2 + heightVariation})`);
+          pebbleGrad.addColorStop(1, `rgba(100, 90, 70, ${0.1 + heightVariation})`);
+          ctx.fillStyle = pebbleGrad;
+          ctx.beginPath();
+          ctx.ellipse(px, py, pebbleSize, pebbleSize * 0.8, n * Math.PI, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Pebble highlight
+          ctx.fillStyle = `rgba(180, 170, 150, ${0.15 + heightVariation})`;
+          ctx.beginPath();
+          ctx.arc(px - pebbleSize * 0.3, py - pebbleSize * 0.3, pebbleSize * 0.3, 0, Math.PI * 2);
           ctx.fill();
         }
+      }
+      
+      // Puddles (water accumulation)
+      if (n > 0.85 && n < 0.9) {
+        const puddleX = x + tileSize * 0.5;
+        const puddleY = y + tileSize * 0.5;
+        const puddleSize = tileSize * 0.2;
+        
+        // Puddle shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+        ctx.beginPath();
+        ctx.ellipse(puddleX + 1, puddleY + 1, puddleSize, puddleSize * 0.6, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Puddle water
+        const puddleGrad = ctx.createRadialGradient(puddleX, puddleY, 0, puddleX, puddleY, puddleSize);
+        puddleGrad.addColorStop(0, 'rgba(80, 100, 120, 0.4)');
+        puddleGrad.addColorStop(0.7, 'rgba(60, 80, 100, 0.3)');
+        puddleGrad.addColorStop(1, 'rgba(40, 60, 80, 0.1)');
+        ctx.fillStyle = puddleGrad;
+        ctx.beginPath();
+        ctx.ellipse(puddleX, puddleY, puddleSize, puddleSize * 0.6, n * Math.PI, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Water reflection/shine
+        ctx.fillStyle = 'rgba(150, 180, 220, 0.2)';
+        ctx.beginPath();
+        ctx.ellipse(puddleX - puddleSize * 0.2, puddleY - puddleSize * 0.1, puddleSize * 0.3, puddleSize * 0.15, 0, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
   }
@@ -2280,6 +2374,67 @@ function drawDynamicLighting(ctx: CanvasRenderingContext2D, state: GameState, ti
     ctx.arc(e.position.x, e.position.y, e.maxRadius * 2.5, 0, Math.PI * 2);
     ctx.fill();
   });
+  
+  ctx.restore();
+}
+
+// ===== WEATHER EFFECTS =====
+function drawWeatherEffects(ctx: CanvasRenderingContext2D, state: GameState, time: number) {
+  // Rain effect
+  ctx.save();
+  ctx.globalAlpha = 0.3;
+  
+  const rainDrops = 100;
+  for (let i = 0; i < rainDrops; i++) {
+    const seed = i * 9301 + 49297;
+    const randomX = (seed % 233280) / 233280;
+    const randomY = ((seed * 13) % 233280) / 233280;
+    
+    const x = (randomX * CANVAS_WIDTH + time * 0.5) % CANVAS_WIDTH;
+    const y = (randomY * CANVAS_HEIGHT + time * 2) % CANVAS_HEIGHT;
+    
+    // Rain drop
+    ctx.strokeStyle = 'rgba(150, 180, 220, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 2, y + 15);
+    ctx.stroke();
+    
+    // Rain splash on ground
+    if (y > CANVAS_HEIGHT * 0.8) {
+      ctx.fillStyle = 'rgba(150, 180, 220, 0.3)';
+      ctx.beginPath();
+      ctx.arc(x - 2, y + 15, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  
+  ctx.restore();
+  
+  // Fog particles (atmospheric depth)
+  ctx.save();
+  ctx.globalAlpha = 0.05;
+  
+  const fogParticles = 20;
+  for (let i = 0; i < fogParticles; i++) {
+    const seed = i * 1337 + 7331;
+    const randomX = (seed % 233280) / 233280;
+    const randomY = ((seed * 7) % 233280) / 233280;
+    const randomSize = ((seed * 11) % 233280) / 233280;
+    
+    const x = (randomX * CANVAS_WIDTH + Math.sin(time * 0.0003 + i) * 50) % CANVAS_WIDTH;
+    const y = randomY * CANVAS_HEIGHT;
+    const size = 50 + randomSize * 100;
+    
+    const fogGrad = ctx.createRadialGradient(x, y, 0, x, y, size);
+    fogGrad.addColorStop(0, 'rgba(200, 210, 220, 0.3)');
+    fogGrad.addColorStop(1, 'rgba(200, 210, 220, 0)');
+    ctx.fillStyle = fogGrad;
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fill();
+  }
   
   ctx.restore();
 }
