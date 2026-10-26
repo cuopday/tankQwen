@@ -1,4 +1,5 @@
 import { Tank, Bullet, Particle, Explosion, Obstacle, GameState, InputState, Vector2 } from './types';
+import { addGroundDecal, clearDecals } from './renderer';
 
 let nextId = 0;
 const getId = () => `id_${nextId++}`;
@@ -284,6 +285,16 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
   player.position.x += player.velocity.x;
   player.position.y += player.velocity.y;
   
+  // Dust trail when moving
+  const playerSpeed = Math.sqrt(player.velocity.x ** 2 + player.velocity.y ** 2);
+  if (playerSpeed > 1 && Math.random() > 0.5) {
+    const dustPos = {
+      x: player.position.x - player.velocity.x * 3 + (Math.random() - 0.5) * 10,
+      y: player.position.y - player.velocity.y * 3 + (Math.random() - 0.5) * 10,
+    };
+    newState.particles = [...newState.particles, ...createParticles(dustPos, 1, 'smoke')];
+  }
+  
   // Bounds
   player.position.x = Math.max(player.size, Math.min(MAP_WIDTH - player.size, player.position.x));
   player.position.y = Math.max(player.size, Math.min(MAP_HEIGHT - player.size, player.position.y));
@@ -326,9 +337,28 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
   
   newState.player = player;
   
+  // Fire trails for damaged tanks
+  if (player.health < player.maxHealth * 0.3 && Math.random() > 0.6) {
+    newState.particles = [...newState.particles, ...createParticles(
+      { x: player.position.x + (Math.random() - 0.5) * player.size, 
+        y: player.position.y + (Math.random() - 0.5) * player.size }, 
+      1, 'smoke'
+    )];
+  }
+  
   // Update enemies AI
   newState.enemies = newState.enemies.map(enemy => {
     const e = { ...enemy };
+    
+    // Fire trail for damaged enemies
+    if (e.health < e.maxHealth * 0.3 && Math.random() > 0.7) {
+      newState.particles = [...newState.particles, ...createParticles(
+        { x: e.position.x + (Math.random() - 0.5) * e.size, 
+          y: e.position.y + (Math.random() - 0.5) * e.size }, 
+        1, 'smoke'
+      )];
+    }
+    
     const toPlayer = {
       x: player.position.x - e.position.x,
       y: player.position.y - e.position.y,
@@ -411,6 +441,10 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
     
     if (b.lifetime <= 0 || b.position.x < 0 || b.position.x > MAP_WIDTH || 
         b.position.y < 0 || b.position.y > MAP_HEIGHT) {
+      // Add small scorch mark where bullet lands
+      if (b.position.x > 0 && b.position.x < MAP_WIDTH && b.position.y > 0 && b.position.y < MAP_HEIGHT) {
+        addGroundDecal(b.position.x, b.position.y, 8, 'scorch');
+      }
       return false;
     }
     
@@ -421,9 +455,11 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
           b.position.x < obs.position.x + obs.width / 2 &&
           b.position.y > obs.position.y - obs.height / 2 &&
           b.position.y < obs.position.y + obs.height / 2) {
-        newState.particles = [...newState.particles, ...createParticles(b.position, 5, 'spark')];
+        newState.particles = [...newState.particles, ...createParticles(b.position, 8, 'spark')];
+        newState.particles = [...newState.particles, ...createParticles(b.position, 3, 'debris')];
         newState.obstacles = [...newState.obstacles];
         newState.obstacles[i] = { ...obs, health: obs.health - b.damage };
+        addGroundDecal(b.position.x, b.position.y, 6, 'scorch');
         return false;
       }
     }
@@ -435,9 +471,13 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
       newState.screenShake = { x: (Math.random() - 0.5) * 8, y: (Math.random() - 0.5) * 8 };
       if (newState.player.health <= 0) {
         newState.gameOver = true;
-        newState.explosions = [...newState.explosions, createExplosion(player.position, 80)];
-        newState.particles = [...newState.particles, ...createParticles(player.position, 40, 'explosion')];
-        newState.particles = [...newState.particles, ...createParticles(player.position, 20, 'smoke')];
+        newState.explosions = [...newState.explosions, createExplosion(player.position, 100)];
+        newState.particles = [...newState.particles, ...createParticles(player.position, 60, 'explosion')];
+        newState.particles = [...newState.particles, ...createParticles(player.position, 30, 'smoke')];
+        newState.particles = [...newState.particles, ...createParticles(player.position, 20, 'spark')];
+        newState.particles = [...newState.particles, ...createParticles(player.position, 15, 'debris')];
+        addGroundDecal(player.position.x, player.position.y, 60, 'crater');
+        addGroundDecal(player.position.x, player.position.y, 80, 'scorch');
       }
       return false;
     }
@@ -450,10 +490,13 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
         newState.particles = [...newState.particles, ...createParticles(b.position, 8, 'spark')];
         
         if (newState.enemies[i].health <= 0) {
-          newState.explosions = [...newState.explosions, createExplosion(enemy.position, 60)];
-          newState.particles = [...newState.particles, ...createParticles(enemy.position, 30, 'explosion')];
-          newState.particles = [...newState.particles, ...createParticles(enemy.position, 15, 'smoke')];
-          newState.particles = [...newState.particles, ...createParticles(enemy.position, 10, 'debris')];
+          newState.explosions = [...newState.explosions, createExplosion(enemy.position, 70)];
+          newState.particles = [...newState.particles, ...createParticles(enemy.position, 40, 'explosion')];
+          newState.particles = [...newState.particles, ...createParticles(enemy.position, 20, 'smoke')];
+          newState.particles = [...newState.particles, ...createParticles(enemy.position, 15, 'debris')];
+          newState.particles = [...newState.particles, ...createParticles(enemy.position, 12, 'spark')];
+          addGroundDecal(enemy.position.x, enemy.position.y, 40, 'crater');
+          addGroundDecal(enemy.position.x, enemy.position.y, 60, 'scorch');
           newState.enemies = newState.enemies.filter((_, idx) => idx !== i);
           newState.score += 100;
           newState.player = { ...newState.player, kills: newState.player.kills + 1 };
@@ -476,6 +519,7 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
     if (obs.health <= 0) {
       newState.particles = [...newState.particles, ...createParticles(obs.position, 15, 'debris')];
       newState.explosions = [...newState.explosions, createExplosion(obs.position, 40)];
+      addGroundDecal(obs.position.x, obs.position.y, 25, 'scorch');
       return false;
     }
     return true;
@@ -498,8 +542,8 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
   });
   
   // Limit particles for performance
-  if (newState.particles.length > 300) {
-    newState.particles = newState.particles.slice(-300);
+  if (newState.particles.length > 500) {
+    newState.particles = newState.particles.slice(-500);
   }
   
   // Update explosions
@@ -535,6 +579,7 @@ export function updateGame(state: GameState, input: InputState, deltaTime: numbe
 }
 
 export function initGameState(): GameState {
+  clearDecals();
   const player = createPlayer();
   const bounds = { minX: player.position.x, maxX: player.position.x, minY: player.position.y, maxY: player.position.y };
   const enemies: Tank[] = [];
