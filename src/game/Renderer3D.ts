@@ -1,7 +1,7 @@
 // 3D Renderer - Complete 3D rendering system
 import { GameState, Tank, Bullet, Obstacle, Particle, Explosion } from './types';
 import { Vector3, Camera, Matrix4 } from './3DSystem';
-import { renderTank3D } from './TankModel3D';
+import { renderSophisticatedTank } from './SophisticatedTankModel';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, MAP_WIDTH, MAP_HEIGHT } from './engine';
 
 export class Renderer3D {
@@ -181,7 +181,7 @@ export class Renderer3D {
   private renderTanks(state: GameState, time: number) {
     // Render all tanks
     for (const enemy of state.enemies) {
-      renderTank3D(
+      renderSophisticatedTank(
         this.ctx,
         enemy,
         this.camera as any,
@@ -193,7 +193,7 @@ export class Renderer3D {
     }
     
     // Render player tank
-    renderTank3D(
+    renderSophisticatedTank(
       this.ctx,
       state.player,
       this.camera as any,

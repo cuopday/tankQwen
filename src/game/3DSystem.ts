@@ -214,10 +214,21 @@ export class Camera {
   }
 }
 
+export interface Material {
+  color: string;
+  specular: string;
+  shininess: number;
+  metallic: number;
+  roughness: number;
+  emissive?: string;
+  emissiveIntensity?: number;
+}
+
 export interface Face {
   vertices: number[]; // indices into vertex array
   color: string;
   normal?: Vector3;
+  material?: Material;
 }
 
 export interface Mesh {
@@ -327,6 +338,7 @@ export function renderMesh(
     depth: number;
     color: string;
     normal: Vector3;
+    material?: Material;
   }
   
   const projectedFaces: ProjectedFace[] = [];
@@ -360,7 +372,8 @@ export function renderMesh(
       points: projected.map(p => ({ x: p.x, y: p.y })),
       depth: center.z,
       color: face.color,
-      normal
+      normal,
+      material: face.material
     });
   }
   
@@ -369,20 +382,49 @@ export function renderMesh(
   
   // Render faces
   for (const face of projectedFaces) {
-    // Calculate lighting
-    const lightIntensity = Math.max(0, face.normal.dot(lightDirection.normalize()));
-    const ambient = 0.3;
-    const diffuse = 0.7;
-    const intensity = ambient + diffuse * lightIntensity;
+    const material = face.material;
     
-    // Apply lighting to color
-    const baseColor = face.color;
-    const litColor = applyLighting(baseColor, intensity);
-    
-    // Draw face
-    ctx.fillStyle = litColor;
-    ctx.strokeStyle = darkenColor(litColor, 20);
-    ctx.lineWidth = 1;
+    if (material && material.emissive) {
+      // Emissive material - self-illuminated
+      ctx.fillStyle = material.emissive;
+      ctx.strokeStyle = material.emissive;
+      ctx.lineWidth = 1;
+    } else {
+      // Calculate lighting
+      const lightIntensity = Math.max(0, face.normal.dot(lightDirection.normalize()));
+      
+      let intensity: number;
+      let baseColor: string;
+      
+      if (material) {
+        // PBR-like lighting
+        const ambient = 0.2;
+        const diffuse = 0.6 * lightIntensity;
+        
+        // Specular highlight
+        const viewDir = new Vector3(0, 0, -1);
+        const reflectDir = lightDirection.sub(face.normal.mul(2 * lightDirection.dot(face.normal)));
+        const specAngle = Math.max(0, viewDir.dot(reflectDir));
+        const specular = Math.pow(specAngle, material.shininess) * material.metallic;
+        
+        intensity = ambient + diffuse + specular * 0.5;
+        baseColor = material.color;
+      } else {
+        // Simple lighting
+        const ambient = 0.3;
+        const diffuse = 0.7;
+        intensity = ambient + diffuse * lightIntensity;
+        baseColor = face.color;
+      }
+      
+      // Apply lighting to color
+      const litColor = applyLighting(baseColor, intensity);
+      
+      // Draw face
+      ctx.fillStyle = litColor;
+      ctx.strokeStyle = darkenColor(litColor, 20);
+      ctx.lineWidth = 1;
+    }
     
     ctx.beginPath();
     ctx.moveTo(face.points[0].x, face.points[0].y);
