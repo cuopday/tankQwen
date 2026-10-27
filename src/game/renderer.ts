@@ -2,6 +2,17 @@ import { GameState, Tank, Bullet, Particle, Explosion, Obstacle, Vector2, Obstac
 import { CANVAS_WIDTH, CANVAS_HEIGHT, MAP_WIDTH, MAP_HEIGHT } from './engine';
 import { drawDetailedTank } from './EnhancedGraphics';
 import { drawRealisticTank, LightingSystem } from './RealisticGraphics';
+import { drawSuperRealisticTank } from './SuperRealisticGraphics';
+import { 
+  drawEnhancedHullShape, 
+  drawEnhancedTurretDome, 
+  drawEnhancedBarrel, 
+  drawEnhancedTrack,
+  drawEnhancedExplosion,
+  drawEnhancedBullet,
+  drawEnhancedSmoke,
+  drawEnhancedFire
+} from './EnhancedShapes';
 
 let groundDecals: Array<{x: number; y: number; radius: number; opacity: number; type: 'scorch' | 'crater'}> = [];
 const MAX_DECALS = 80;
@@ -58,15 +69,15 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameState, time
     drawables.push({ y: obs.position.y + obs.height / 2, draw: () => drawObstacle2D5(ctx, obs, time) });
   });
   
-  // Tanks (using realistic PBR graphics)
+  // Tanks (using super realistic enhanced graphics)
   state.enemies.forEach(tank => {
-    drawables.push({ y: tank.position.y, draw: () => drawRealisticTank(ctx, tank, time, lightingSystem) });
+    drawables.push({ y: tank.position.y, draw: () => drawSuperRealisticTank(ctx, tank, time, lightingSystem) });
   });
-  drawables.push({ y: state.player.position.y, draw: () => drawRealisticTank(ctx, state.player, time, lightingSystem) });
+  drawables.push({ y: state.player.position.y, draw: () => drawSuperRealisticTank(ctx, state.player, time, lightingSystem) });
   
-  // Bullets
+  // Bullets (using enhanced shapes)
   state.bullets.forEach(b => {
-    drawables.push({ y: b.position.y, draw: () => drawBullet2D5(ctx, b, time) });
+    drawables.push({ y: b.position.y, draw: () => drawEnhancedBullet(ctx, b, time) });
   });
   
   drawables.sort((a, b) => a.y - b.y);
@@ -83,8 +94,8 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameState, time
   // Fireflies (always on top, atmospheric)
   drawFireflies(ctx, state, time);
   
-  // Explosions
-  state.explosions.forEach(e => drawExplosion(ctx, e, time));
+  // Explosions (using enhanced shapes)
+  state.explosions.forEach(e => drawEnhancedExplosion(ctx, e, time));
   
   // Dynamic lighting
   drawDynamicLighting(ctx, state, time);
@@ -2257,13 +2268,8 @@ function drawParticle(ctx: CanvasRenderingContext2D, p: Particle, time: number) 
   ctx.rotate(p.rotation);
   
   if (p.type === 'smoke') {
-    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, p.size);
-    g.addColorStop(0, `rgba(80, 80, 70, ${p.opacity * 0.3})`);
-    g.addColorStop(1, 'rgba(50, 50, 40, 0)');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(0, 0, p.size, 0, Math.PI * 2);
-    ctx.fill();
+    // Use enhanced smoke shape with multiple overlapping circles
+    drawEnhancedSmoke(ctx, 0, 0, p.size, p.opacity, time);
   } else if (p.type === 'dust') {
     const g = ctx.createRadialGradient(0, 0, 0, 0, 0, p.size);
     g.addColorStop(0, `rgba(140, 110, 70, ${p.opacity * 0.35})`);
@@ -2274,30 +2280,56 @@ function drawParticle(ctx: CanvasRenderingContext2D, p: Particle, time: number) 
     ctx.fill();
   } else if (p.type === 'spark') {
     ctx.shadowColor = p.color;
-    ctx.shadowBlur = 3;
+    ctx.shadowBlur = 4;
     ctx.fillStyle = p.color;
     ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
     ctx.shadowBlur = 0;
+    
+    // Spark core highlight
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.fillRect(-p.size / 4, -p.size / 8, p.size / 2, p.size / 4);
   } else if (p.type === 'explosion') {
     const g = ctx.createRadialGradient(0, 0, 0, 0, 0, p.size);
     g.addColorStop(0, p.color);
+    g.addColorStop(0.5, p.color + '88');
     g.addColorStop(1, 'transparent');
     ctx.fillStyle = g;
     ctx.beginPath();
     ctx.arc(0, 0, p.size, 0, Math.PI * 2);
     ctx.fill();
   } else if (p.type === 'debris') {
+    // Enhanced debris with better 3D shape
     ctx.fillStyle = p.color;
-    ctx.fillRect(-p.size / 2, -p.size / 3, p.size, p.size * 0.6);
+    ctx.beginPath();
+    ctx.moveTo(-p.size / 2, -p.size / 3);
+    ctx.lineTo(p.size / 2, -p.size / 4);
+    ctx.lineTo(p.size / 3, p.size / 3);
+    ctx.lineTo(-p.size / 3, p.size / 2);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Debris highlight
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.beginPath();
+    ctx.moveTo(-p.size / 2, -p.size / 3);
+    ctx.lineTo(p.size / 4, -p.size / 4);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(-p.size / 4, 0);
+    ctx.closePath();
+    ctx.fill();
   } else if (p.type === 'muzzle') {
     const g = ctx.createRadialGradient(0, 0, 0, 0, 0, p.size);
     g.addColorStop(0, '#ffffff');
-    g.addColorStop(0.4, '#ffee00');
+    g.addColorStop(0.3, '#ffee00');
+    g.addColorStop(0.6, '#ffaa00');
     g.addColorStop(1, 'transparent');
     ctx.fillStyle = g;
     ctx.beginPath();
     ctx.arc(0, 0, p.size, 0, Math.PI * 2);
     ctx.fill();
+  } else if (p.type === 'fire') {
+    // Use enhanced fire shape with flickering
+    drawEnhancedFire(ctx, 0, 0, p.size, p.opacity, time);
   }
   
   ctx.restore();
