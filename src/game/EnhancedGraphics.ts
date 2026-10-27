@@ -1,3 +1,4 @@
+import { lightenColor, darkenColor } from './colors';
 // Enhanced Graphics System - Ultra-detailed rendering
 import { Tank, Bullet, Obstacle, Vector2 } from './types';
 
@@ -668,18 +669,4 @@ function drawPlayerIndicator(ctx: CanvasRenderingContext2D, tank: Tank, time: nu
 }
 
 // ===== UTILITY FUNCTIONS =====
-function lightenColor(color: string, amount: number): string {
-  const hex = color.replace('#', '');
-  const r = Math.min(255, parseInt(hex.slice(0, 2), 16) + amount);
-  const g = Math.min(255, parseInt(hex.slice(2, 4), 16) + amount);
-  const b = Math.min(255, parseInt(hex.slice(4, 6), 16) + amount);
-  return `rgb(${r},${g},${b})`;
-}
-
-function darkenColor(color: string, amount: number): string {
-  const hex = color.replace('#', '');
-  const r = Math.max(0, parseInt(hex.slice(0, 2), 16) - amount);
-  const g = Math.max(0, parseInt(hex.slice(2, 4), 16) - amount);
-  const b = Math.max(0, parseInt(hex.slice(4, 6), 16) - amount);
-  return `rgb(${r},${g},${b})`;
-}
+// Color utilities imported from ./colors

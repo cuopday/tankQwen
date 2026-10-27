@@ -12,7 +12,8 @@ type GameScreen = 'menu' | 'loadout' | 'playing';
 
 export default function App() {
   const [screen, setScreen] = useState<GameScreen>('menu');
-  const [gameState, setGameState] = useState<GameState>(initGameState());
+  const [gameState, setGameState] = useState<GameState>(initGameState);
+  const [gameSession, setGameSession] = useState(0);
   const [selectedTank, setSelectedTank] = useState<TankDefinition | null>(null);
   const [selectedWeapon, setSelectedWeapon] = useState<WeaponDefinition | null>(null);
 
@@ -64,6 +65,7 @@ export default function App() {
     }
     
     setGameState(newState);
+    setGameSession(session => session + 1);
   }, [selectedTank]);
 
   return (
@@ -72,12 +74,14 @@ export default function App() {
         {/* Game Canvas - always rendered when playing */}
         {screen === 'playing' && (
           <>
-            <GameCanvas 
+            <GameCanvas
+              key={gameSession}
+              initialState={gameState}
               onStateChange={handleStateChange} 
               gameStarted={true}
               onRestart={handleRestart}
             />
-            <HUD state={gameState} />
+            <HUD state={gameState} onRestart={handleRestart} />
           </>
         )}
         

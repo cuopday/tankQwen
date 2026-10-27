@@ -1,3 +1,4 @@
+import { lightenColor, darkenColor, blendColors } from './colors';
 // Realistic Graphics System - PBR-inspired rendering
 import { Tank, Vector2 } from './types';
 
@@ -1044,37 +1045,4 @@ function drawPlayerIndicator(ctx: CanvasRenderingContext2D, tank: Tank, time: nu
 }
 
 // ===== UTILITY FUNCTIONS =====
-function lightenColor(color: string, amount: number): string {
-  const hex = color.replace('#', '');
-  const r = Math.min(255, parseInt(hex.slice(0, 2), 16) + amount);
-  const g = Math.min(255, parseInt(hex.slice(2, 4), 16) + amount);
-  const b = Math.min(255, parseInt(hex.slice(4, 6), 16) + amount);
-  return `rgb(${r},${g},${b})`;
-}
-
-function darkenColor(color: string, amount: number): string {
-  const hex = color.replace('#', '');
-  const r = Math.max(0, parseInt(hex.slice(0, 2), 16) - amount);
-  const g = Math.max(0, parseInt(hex.slice(2, 4), 16) - amount);
-  const b = Math.max(0, parseInt(hex.slice(4, 6), 16) - amount);
-  return `rgb(${r},${g},${b})`;
-}
-
-function blendColors(color1: string, color2: string, blend: number): string {
-  const hex1 = color1.replace('#', '');
-  const hex2 = color2.replace('#', '');
-  
-  const r1 = parseInt(hex1.slice(0, 2), 16);
-  const g1 = parseInt(hex1.slice(2, 4), 16);
-  const b1 = parseInt(hex1.slice(4, 6), 16);
-  
-  const r2 = parseInt(hex2.slice(0, 2), 16);
-  const g2 = parseInt(hex2.slice(2, 4), 16);
-  const b2 = parseInt(hex2.slice(4, 6), 16);
-  
-  const r = Math.round(r1 + (r2 - r1) * blend);
-  const g = Math.round(g1 + (g2 - g1) * blend);
-  const b = Math.round(b1 + (b2 - b1) * blend);
-  
-  return `rgb(${r},${g},${b})`;
-}
+// Color utilities imported from ./colors

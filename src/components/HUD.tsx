@@ -3,9 +3,10 @@ import { MAP_WIDTH, MAP_HEIGHT } from '../game/engine';
 
 interface HUDProps {
   state: GameState;
+  onRestart: () => void;
 }
 
-export default function HUD({ state }: HUDProps) {
+export default function HUD({ state, onRestart }: HUDProps) {
   const healthPercent = (state.player.health / state.player.maxHealth) * 100;
   const healthColor = healthPercent > 50 ? 'from-green-400 to-emerald-500' : 
                       healthPercent > 25 ? 'from-yellow-400 to-amber-500' : 
@@ -294,7 +295,7 @@ export default function HUD({ state }: HUDProps) {
             <button 
               className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-lg rounded-xl 
                          hover:from-blue-500 hover:to-purple-500 transition-all shadow-lg active:scale-95"
-              onClick={() => window.location.reload()}
+              onClick={onRestart}
             >
               ⚔️ PLAY AGAIN
             </button>

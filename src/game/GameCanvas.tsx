@@ -1,17 +1,18 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { GameState, InputState } from './types';
-import { initGameState, updateGame, CANVAS_WIDTH, CANVAS_HEIGHT } from './engine';
+import { updateGame, CANVAS_WIDTH, CANVAS_HEIGHT } from './engine';
 import { renderGame } from './renderer';
 
 interface GameCanvasProps {
+  initialState: GameState;
   onStateChange: (state: GameState) => void;
   gameStarted: boolean;
   onRestart: () => void;
 }
 
-export default function GameCanvas({ onStateChange, gameStarted, onRestart }: GameCanvasProps) {
+export default function GameCanvas({ initialState, onStateChange, gameStarted, onRestart }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const gameStateRef = useRef<GameState>(initGameState());
+  const gameStateRef = useRef<GameState>(initialState);
   const inputRef = useRef<InputState>({
     up: false, down: false, left: false, right: false,
     shoot: false, mouseX: CANVAS_WIDTH / 2, mouseY: CANVAS_HEIGHT / 2,
@@ -68,9 +69,6 @@ export default function GameCanvas({ onStateChange, gameStarted, onRestart }: Ga
           break;
         case 'r':
           if (gameStateRef.current.gameOver) {
-            gameStateRef.current = initGameState();
-            gameStateRef.current.gameStarted = true;
-            gameStartedRef.current = true;
             onRestart();
           }
           break;
