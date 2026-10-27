@@ -14,6 +14,7 @@ import {
   drawEnhancedSmoke,
   drawEnhancedFire
 } from './EnhancedShapes';
+import { Renderer3D } from './Renderer3D';
 
 let groundDecals: Array<{x: number; y: number; radius: number; opacity: number; type: 'scorch' | 'crater'}> = [];
 const MAX_DECALS = 80;
@@ -21,7 +22,16 @@ const MAX_DECALS = 80;
 // Global lighting system
 const lightingSystem = new LightingSystem();
 
+// 3D renderer instance
+let renderer3D: Renderer3D | null = null;
+
 export function renderGame(ctx: CanvasRenderingContext2D, state: GameState, time: number) {
+  // Use 3D renderer
+  if (!renderer3D) {
+    renderer3D = new Renderer3D(ctx.canvas);
+  }
+  renderer3D.render(state, time);
+  return; // Skip 2.5D rendering
   const camera = {
     x: state.player.position.x - CANVAS_WIDTH / 2 + state.screenShake.x,
     y: state.player.position.y - CANVAS_HEIGHT / 2 + state.screenShake.y,
